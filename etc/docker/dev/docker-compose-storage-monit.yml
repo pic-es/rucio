@@ -24,8 +24,8 @@ services:
       - rucio-client-2:rucio-client-2
       - rucio-client-3:rucio-client-3
       - rucio-client-4:rucio-client-4
-      - rucio-client-5:rucio-client-6
-      - rucio-daemons:rucio-daemons
+      - rucio-client-5:rucio-client-5
+      - rucio-client-6:rucio-client-6
     volumes:
       - ../../../tools:/opt/rucio/tools
       - ../../../bin:/opt/rucio/bin
