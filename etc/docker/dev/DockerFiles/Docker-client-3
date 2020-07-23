@@ -50,20 +50,11 @@ RUN mkdir /.globus
 RUN mkdir -p /etc/grid-security/certificates/
 ADD /Server-files/certs/* /etc/grid-security/certificates/
 
-ADD /Agus-certs/usercert.pem /opt/rucio/etc/aguscert.pem
-ADD /Agus-certs/userkey.pem /opt/rucio/etc/aguskey.pem
-ADD /Agus-certs/CERN-bundle.pem /opt/rucio/etc/
-ADD /Agus-certs/rucio_ca.pem /opt/rucio/etc/
-ADD /Root-certs/ruciouser.pem /opt/rucio/etc/
-ADD /Root-certs/ruciouser.key.pem /opt/rucio/etc/
+ADD /Other-certs/rucio_ca.pem /opt/rucio/etc/
 ADD /Other-certs/mariouser.pem /opt/rucio/etc/
 ADD /Other-certs/mariouser.key.pem /opt/rucio/etc/
 
 RUN ls -l /opt/rucio/etc/
-RUN chmod 644 /opt/rucio/etc/aguscert.pem
-RUN chmod 400 /opt/rucio/etc/aguskey.pem
-RUN chmod 644 /opt/rucio/etc/ruciouser.pem
-RUN chmod 400 /opt/rucio/etc/ruciouser.key.pem
 RUN chmod 644 /opt/rucio/etc/mariouser.pem
 RUN chmod 400 /opt/rucio/etc/mariouser.key.pem
 

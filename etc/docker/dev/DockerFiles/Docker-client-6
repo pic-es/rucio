@@ -52,8 +52,7 @@ ADD /Server-files/certs/* /etc/grid-security/certificates/
 
 ADD /Other-certs/elenauser.pem /opt/rucio/etc/elenauser.pem
 ADD /Other-certs/elenauser.key.pem /opt/rucio/etc/elenauser.key.pem
-ADD /Agus-certs/CERN-bundle.pem /opt/rucio/etc
-ADD /Agus-certs/rucio_ca.pem /opt/rucio/etc
+ADD /Other-certs/rucio_ca.pem /opt/rucio/etc
 
 
 RUN voms-proxy-init -cert /opt/rucio/etc/elenauser.pem -key /opt/rucio/etc/elenauser.key.pem -valid 3000:00

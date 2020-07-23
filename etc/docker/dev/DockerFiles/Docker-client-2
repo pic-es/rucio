@@ -51,7 +51,6 @@ ADD /Server-files/certs/* /etc/grid-security/certificates/
 
 ADD /Other-certs/agususer.pem /opt/rucio/etc/agususer.pem
 ADD /Other-certs/agususer.key.pem /opt/rucio/etc/agususer.key.pem
-ADD /Other-certs/CERN-bundle.pem /opt/rucio/etc
 ADD /Other-certs/rucio_ca.pem /opt/rucio/etc
 
 RUN chmod 644 /opt/rucio/etc/agususer.pem

@@ -41,13 +41,6 @@ RUN chmod 777 /start-daemon-v2.sh
 RUN chmod -R 777 /start-daemon-v2.sh
 RUN chmod +x /start-daemon-v2.sh
 
-ADD /Agus-certs/test-bruzzese.py /
-ADD /Agus-certs/test-upload-bruzzese.py /
-ADD /Agus-certs/test-create-rules-bruzzese.py /
-ADD /Agus-certs/rucio.cfg /opt/rucio/etc/rucio.cfg.2
-ADD /Agus-certs/usercert.pem /opt/rucio/etc/aguscert.pem
-ADD /Agus-certs/userkey.pem /opt/rucio/etc/aguskey.pem
-
 ADD /Root-certs/test-root.py /
 ADD /Root-certs/test-upload-root.py /
 ADD /Root-certs/test-create-rules-root.py / 
@@ -72,6 +65,5 @@ ADD Daemon-certs/conveyor-submitter.sh /
 RUN chmod 777 /conveyor-submitter.sh
 RUN chmod -R 777 /conveyor-submitter.sh
 
-RUN httpd -k graceful
 RUN ls /opt/rucio/tools/
 RUN chmod +x /usr/local/bin/run_daemons

@@ -52,8 +52,7 @@ ADD /Server-files/certs/* /etc/grid-security/certificates/
 
 ADD /Other-certs/gonzalouser.pem /opt/rucio/etc/gonzalouser.pem
 ADD /Other-certs/gonzalouser.key.pem /opt/rucio/etc/gonzalouser.key.pem
-ADD /Agus-certs/CERN-bundle.pem /opt/rucio/etc
-ADD /Agus-certs/rucio_ca.pem /opt/rucio/etc
+ADD /Other-certs/rucio_ca.pem /opt/rucio/etc
 
 
 RUN voms-proxy-init -cert /opt/rucio/etc/gonzalouser.pem -key /opt/rucio/etc/gonzalouser.key.pem -valid 3000:00
