@@ -19,7 +19,6 @@
 # - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2018-2019
 # - Mario Lassnig <mario.lassnig@cern.ch>, 2019
 # - Cedric Serfon <cedric.serfon@cern.ch>, 2020
-# - Patrick Austin <patrick.austin@stfc.ac.uk>, 2020
 
 memcached -u root -d
 
@@ -46,7 +45,7 @@ done
 export RUCIO_HOME=/opt/etc/test
 
 echo 'Clearing memcache'
-echo flush_all > /dev/tcp/127.0.0.1/11211
+echo 'flush_all' | nc localhost 11211
 
 echo 'Graceful restart of Apache'
 httpd -k graceful
@@ -100,13 +99,6 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-echo 'Bootstrap tests: Create jdoe account/mock scope'
-tools/bootstrap_tests.py
-if [ $? != 0 ]; then
-    echo 'Failed to bootstrap!'
-    exit 1
-fi
-
 echo 'Sync rse_repository'
 if test ${special};then
     tools/sync_rses.py etc/rse_repository.json.special
@@ -151,8 +143,10 @@ if test ${special}; then
     nosetests -v --logging-filter=-sqlalchemy,-requests,-rucio.client.baseclient lib/rucio/tests/test_dirac.py
 else
     echo 'Running tests'
-    noseopts="--exclude=test_alembic --exclude=.*test_rse_protocol_.* --exclude=test_rucio_server --exclude=test_objectstore --exclude=test_auditor* --exclude=test_release* --exclude=test_throttler --exclude=test_dirac --exclude=test_multi_vo"
+    noseopts="--exclude=test_alembic --exclude=.*test_rse_protocol_.* --exclude=test_rucio_server --exclude=test_objectstore --exclude=test_auditor* --exclude=test_release* --exclude=test_throttler --exclude=test_dirac"
     nosetests -v --logging-filter=-sqlalchemy,-requests,-rucio.client.baseclient $noseopts
 fi
+
+supervisord -c /etc/supervisord.conf --nodaemon &
 
 exit $?

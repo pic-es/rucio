@@ -1,65 +1,89 @@
 #!/usr/bin/env python
-# Copyright European Organization for Nuclear Research (CERN)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# You may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Authors:
-# - Vincent Garonne, <vincent.garonne@cern.ch>, 2013
-# - Mario Lassnig, <mario.lassnig@cern.ch>, 2014
-# - Martin Barisits, <martin.barisits@cern.ch>, 2017
-# - Thomas Beermann, <thomas.beermann@cern.ch>, 2017
-# - Cedric Serfon, <cedric.serfon@cern.ch>, 2019
-# - Patrick Austin <patrick.austin@stfc.ac.uk>, 2020
-#
-# PY3K COMPATIBLE
 
-from rucio.api.vo import add_vo
 from rucio.client import Client
-from rucio.common.config import config_get, config_get_bool
 from rucio.common.exception import Duplicate
 from rucio.core.account import add_account_attribute
 from rucio.common.types import InternalAccount
 
 
 if __name__ == '__main__':
-    if config_get_bool('common', 'multi_vo', raise_exception=False, default=False):
-        vo = {'vo': config_get('client', 'vo', raise_exception=False, default='tst')}
-        try:
-            add_vo(new_vo=vo['vo'], issuer='super_root', description='A VO to test multi-vo features', email='N/A', vo='def')
-        except Duplicate:
-            print('VO {} already added'.format(vo['vo']) % locals())
-    else:
-        vo = {}
-
     c = Client()
     try:
-        c.add_account('jdoe', 'SERVICE', 'jdoe@email.com')
+        c.add_account('bruzzese', 'SERVICE', 'bruzzese@pic.es')
+	add_account_attribute(account=InternalAccount('bruzzese'), key='admin', value=True)
     except Duplicate:
-        print('Account jdoe already added' % locals())
-
+        print('Account bruzzese already added' % locals())
     try:
-        add_account_attribute(account=InternalAccount('root', **vo), key='admin', value=True)  # bypass client as schema validation fails at API level
+        add_account_attribute(account=InternalAccount('root'), key='admin', value=True)  # bypass client as schema validation fails at API level
     except Exception as error:
         print(error)
+    try:
+        c.add_identity(account='bruzzese', identity='bruzzese_user', authtype='userpass', password='pwd123', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+    try:
+        c.add_identity(account='bruzzese', identity='/CN=Agustin Bruzzese', authtype='x509', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
 
     try:
-        c.add_account('panda', 'SERVICE', 'panda@email.com')
-        add_account_attribute(account=InternalAccount('panda', **vo), key='admin', value=True)
-    except Duplicate:
-        print('Account panda already added' % locals())
+        c.add_identity(account='mario', identity='mario_user', authtype='userpass', password='pwd123', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
 
     try:
-        c.add_scope('jdoe', 'mock')
+        c.add_account('gonzalo', 'SERVICE', 'bruzzese@pic.es')
+	add_account_attribute(account=InternalAccount('gonzalo'), key='admin', value=True)
     except Duplicate:
-        print('Scope mock already added' % locals())
+        print('Account bruzzese already added' % locals())
+    try:
+        c.add_identity(account='gonzalo', identity='/CN=Gonzalo Merino', authtype='x509', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+    try:
+        c.add_identity(account='gonzalo', identity='gonzalo_user', authtype='userpass', password='pwd123', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
 
     try:
-        c.add_scope('root', 'archive')
+        c.add_account('elena', 'SERVICE', 'bruzzese@pic.es')
+	add_account_attribute(account=InternalAccount('elena'), key='admin', value=True)
     except Duplicate:
-        print('Scope archive already added' % locals())
+        print('Account bruzzese already added' % locals())
+    try:
+        c.add_identity(account='elena', identity='/CN=Elena Planas', authtype='x509', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+    try:
+        c.add_identity(account='elena', identity='elena_user', authtype='userpass', password='pwd123', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+
+    try:
+        c.add_account('pau', 'SERVICE', 'bruzzese@pic.es')
+	add_account_attribute(account=InternalAccount('pau'), key='admin', value=True)
+    except Duplicate:
+        print('Account bruzzese already added' % locals())
+    try:
+        c.add_identity(account='pau', identity='/CN=Pau Tallada', authtype='x509', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+    try:
+        c.add_identity(account='pau', identity='pau_user', authtype='userpass', password='pwd123', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+
+
+    try:
+        c.add_account('mario', 'SERVICE', 'bruzzese@pic.es')
+	add_account_attribute(account=InternalAccount('mario'), key='admin', value=True)
+    except Duplicate:
+        print('Account bruzzese already added' % locals())
+    try:
+        c.add_identity(account='mario', identity='/CN=Mario Lassnig', authtype='x509', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
+
 
     # add your accounts here, if you test against CERN authed nodes
     additional_test_accounts = [('/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mlassnig/CN=663551/CN=Mario Lassnig', 'x509', 'mario.lassnig@cern.ch'),
