@@ -178,21 +178,6 @@ services:
       - X509_USER_CERT=/opt/rucio/etc/ruciouser.pem
       - X509_USER_KEY=/opt/rucio/etc/ruciouser.key.pem
     entrypoint: /usr/bin/yes
-  rucio-daemons:
-    build:
-      context: .
-      dockerfile: DockerFiles/Docker-rucio-daemons
-    hostname: rucio-daemons
-    restart: always
-    ports:
-      - "1098:1098"
-    volumes:
-      - ./daemon_logs:/var/log/daemon_logs
-      - ../../../bin:/opt/rucio/bin
-    environment:
-      - X509_USER_CERT=/opt/rucio/etc/usercert.pem
-      - X509_USER_KEY=/opt/rucio/etc/userkey.pem
-    entrypoint: /usr/bin/yes
   xrd3:
     image: rucio/xrootd-noauth
     hostname: xrd3
