@@ -141,7 +141,7 @@ Terminal 1 can now be left open, and then from your host go into a new Terminal 
     docker exec -it dev_rucio_1 /bin/bash
     rucio whoami
 
-
+e
 The command will output in Terminal 2, and at the same time the server debug output will be shown in Terminal 1.
 
 The same `logshow` is also available in the FTS container::

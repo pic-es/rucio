@@ -1,8 +1,11 @@
 version: "2"
 services:
   rucio:
-    image: rucio/rucio-dev
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-server
     hostname: rucio
+    restart: always
     ports:
       - "443:443"
     links:
@@ -17,23 +20,31 @@ services:
       - activemq:activemq
       - kibana:kibana
       - grafana:grafana
+      - rucio-client-1:rucio-client-1
+      - rucio-client-2:rucio-client-2
+      - rucio-client-3:rucio-client-3
+      - rucio-client-4:rucio-client-4
+      - rucio-client-5:rucio-client-6
+      - rucio-daemons:rucio-daemons
     volumes:
       - ../../../tools:/opt/rucio/tools
       - ../../../bin:/opt/rucio/bin
       - ../../../lib:/opt/rucio/lib
+      - ./daemon_logs:/var/log/daemon_logs
     environment:
       - X509_USER_CERT=/opt/rucio/etc/usercert.pem
       - X509_USER_KEY=/opt/rucio/etc/userkey.pem
     command: ["/monit-entrypoint.sh"]
   ruciodb:
     image: postgres:11
+    restart: always
     environment:
       - POSTGRES_USER=rucio
       - POSTGRES_DB=rucio
       - POSTGRES_PASSWORD=secret
     ports:
       - "5432:5432"
-    command: ["-c", "fsync=off","-c", "synchronous_commit=off","-c", "full_page_writes=off"]
+    command: ["-c", "fsync=off","-c", "synchronous_commit=off","-c", "full_page_writes=off", "-c","max_connections=1000"]
   graphite:
     image: graphiteapp/graphite-statsd
     ports:
@@ -41,12 +52,14 @@ services:
   fts:
     image: rucio/fts
     hostname: fts
+    restart: always
     ports:
       - "8446:8446"
       - "8449:8449"
   ftsdb:
     image: mysql:5
     hostname: ftsdb
+    restart: always
     environment:
       - MYSQL_USER=fts
       - MYSQL_PASSWORD=fts
@@ -57,6 +70,7 @@ services:
   xrd1:
     image: rucio/xrootd
     hostname: xrd1
+    restart: always
     environment:
       - XRDPORT=1094
     ports:
@@ -67,6 +81,7 @@ services:
   xrd2:
     image: rucio/xrootd
     hostname: xrd2
+    restart: always
     environment:
       - XRDPORT=1095
     ports:
@@ -74,19 +89,10 @@ services:
     volumes:
       - ../../certs/hostcert_xrd2.pem:/tmp/xrdcert.pem
       - ../../certs/hostcert_xrd2.key.pem:/tmp/xrdkey.pem
-  xrd3:
-    image: rucio/xrootd
-    hostname: xrd3
-    environment:
-      - XRDPORT=1096
-    ports:
-      - "1096:1096"
-    volumes:
-      - ../../certs/hostcert_xrd3.pem:/tmp/xrdcert.pem
-      - ../../certs/hostcert_xrd3.key.pem:/tmp/xrdkey.pem
   minio:
     image: minio/minio
     hostname: minio
+    restart: always
     environment:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=password
@@ -99,6 +105,7 @@ services:
   activemq:
     image: webcenter/activemq:latest
     hostname: activemq
+    restart: always
     environment:
        - ACTIVEMQ_CONFIG_NAME=activemq
        - ACTIVEMQ_CONFIG_DEFAULTACCOUNT=false
@@ -113,6 +120,7 @@ services:
   elasticsearch:
     image: elasticsearch:7.4.0
     hostname: elasticsearch
+    restart: always
     environment:
       - discovery.type=single-node
     ports:
@@ -121,6 +129,7 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash-oss:7.3.2
     hostname: logstash
+    restart: always
     command: bash -c "logstash-plugin install logstash-input-stomp ; /usr/local/bin/docker-entrypoint"
     ports:
       - "5044:5044"
@@ -132,6 +141,7 @@ services:
   kibana:
     image: kibana:7.4.0
     hostname: kibana
+    restart: always
     ports:
       - "5601:5601"
     links:
@@ -139,7 +149,102 @@ services:
   grafana:
     image: grafana/grafana:latest
     hostname: grafana
+    restart: always
     ports:
       - "3000:3000"
     links:
       - "elasticsearch:elasticsearch"
+  rucio-client-1:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-client-1
+    hostname: rucio-client-1
+    restart: always
+    ports:
+      - "1096:1096"
+    environment:
+      - X509_USER_CERT=/opt/rucio/etc/ruciouser.pem
+      - X509_USER_KEY=/opt/rucio/etc/ruciouser.key.pem
+    entrypoint: /usr/bin/yes
+  rucio-client-2:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-client-2
+    hostname: rucio-client-2
+    restart: always
+    ports:
+      - "1097:1097"
+    environment:
+      - X509_USER_CERT=/opt/rucio/etc/ruciouser.pem
+      - X509_USER_KEY=/opt/rucio/etc/ruciouser.key.pem
+    entrypoint: /usr/bin/yes
+  rucio-daemons:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-rucio-daemons
+    hostname: rucio-daemons
+    restart: always
+    ports:
+      - "1098:1098"
+    volumes:
+      - ./daemon_logs:/var/log/daemon_logs
+      - ../../../bin:/opt/rucio/bin
+    environment:
+      - X509_USER_CERT=/opt/rucio/etc/usercert.pem
+      - X509_USER_KEY=/opt/rucio/etc/userkey.pem
+    entrypoint: /usr/bin/yes
+  xrd3:
+    image: rucio/xrootd-noauth
+    hostname: xrd3
+    restart: always
+    environment:
+      - XRDPORT=1095
+    ports:
+      - "1099:1099"
+    volumes:
+      - ../../certs/hostcert_xrd3.pem:/tmp/xrdcert.pem
+      - ../../certs/hostcert_xrd3.key.pem:/tmp/xrdkey.pem
+  rucio-client-3:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-client-3
+    hostname: rucio-client-3
+    restart: always
+    ports:
+      - "1100:1100"
+    environment:
+      - X509_USER_CERT=/opt/rucio/etc/mariouser.pem
+      - X509_USER_KEY=/opt/rucio/etc/mariouser.key.pem
+    entrypoint: /usr/bin/yes
+  rucio-client-4:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-client-4
+    hostname: rucio-client-4
+    restart: always
+    ports:
+      - "1101:1101"
+    environment:
+      - X509_USER_CERT=/opt/rucio/etc/gonzalouser.pem
+      - X509_USER_KEY=/opt/rucio/etc/gonzalouser.key.pem
+    entrypoint: /usr/bin/yes
+  rucio-client-5:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-client-5
+    hostname: rucio-client-5
+    restart: always
+    ports:
+      - "1102:1102"
+  rucio-client-6:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-client-6
+    hostname: rucio-client-6
+    restart: always
+    ports:
+      - "1103:1103"
+    environment:
+      - X509_USER_CERT=/opt/rucio/etc/pauuser.pem
+      - X509_USER_KEY=/opt/rucio/etc/pauuser.key.pem
+    entrypoint: /usr/bin/yes

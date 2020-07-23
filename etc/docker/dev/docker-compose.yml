@@ -1,8 +1,11 @@
 version: "2"
 services:
-  rucio:
-    image: rucio/rucio-dev
-    hostname: rucio
+  rucio.pic.testserver:
+    build:
+      context: .
+      dockerfile: DockerFiles/Docker-server
+    hostname: rucio.pic.testserver
+    restart: always
     ports:
       - "443:443"
     links:
@@ -12,9 +15,11 @@ services:
       - ../../../tools:/opt/rucio/tools
       - ../../../bin:/opt/rucio/bin
       - ../../../lib:/opt/rucio/lib
+      - ./daemon_logs:/var/log/daemon_logs
     environment:
       - X509_USER_CERT=/opt/rucio/etc/usercert.pem
       - X509_USER_KEY=/opt/rucio/etc/userkey.pem
+    command: ["/monit-entrypoint.sh"]
   ruciodb:
     image: postgres:11
     environment:
