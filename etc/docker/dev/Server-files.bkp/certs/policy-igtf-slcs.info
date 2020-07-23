@@ -1,0 +1,19 @@
+# @(#)policy-igtf-slcs.info - IGTF slcs authorities
+# Generated Thursday, 23 Apr, 2020
+alias = policy-igtf-slcs
+version = 1.106
+requires = NCSA-slcs-2013 = 1.106, \
+    PSC-Myproxy-CA = 1.106, \
+    NERSC-SLCS = 1.106
+subjectdn = "/C=US/O=National Center for Supercomputing Applications/OU=Certificate Authorities/CN=MyProxy CA 2013", \
+    "/C=US/O=Pittsburgh Supercomputing Center/CN=PSC MyProxy CA", \
+    "/DC=net/DC=ES/OU=Certificate Authorities/CN=NERSC Online CA"
+obsoletes = SWITCHslcs, \
+    ncsa-gridshib-ca, \
+    SWITCHslcs2011, \
+    NCSA-tfca, \
+    NICS-MyProxy, \
+    NCSA-slcs, \
+    FNAL-SLCS, \
+    DFN-SLCS, \
+    NCSA-tfca-2013

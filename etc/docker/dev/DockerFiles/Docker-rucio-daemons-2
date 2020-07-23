@@ -1,0 +1,102 @@
+FROM rucio/rucio-daemons
+RUN echo "Building client"
+
+# Required repos
+ADD "http://dmc-repo.web.cern.ch/dmc-repo/dmc-ci-el7.repo" "/etc/yum.repos.d/"
+ADD "http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo" "/etc/yum.repos.d/"
+
+RUN yum install -y epel-release.noarch
+RUN yum upgrade -y
+RUN yum install -y root nano git tree make httpd python3 python3-mod_wsgi libaio gcc python36-devel.x86_64 mod_ssl openssl-devel.x86_64 python3-m2crypto libnsl.x86_64 cronie supervisor
+
+RUN rpm -i /tmp/oic.rpm; \
+    echo "/usr/lib/oracle/12.2/client64/lib" >/etc/ld.so.conf.d/oracle.conf; \
+    ldconfig
+
+# Install dependecies
+RUN yum install -y \
+    gfal2 \
+    gfal2-all \
+    gfal2-util \
+    gfal2-plugin-file \
+    gfal2-plugin-gridftp \
+    gfal2-plugin-http \
+    gfal2-plugin-srm \
+    gfal2-plugin-xrootd \
+    gfal2-python \
+    gfal2-plugin-xrootd \
+    gfal* \
+    xrootd-client \
+    sendmail \
+    sendmail-cf \
+    globus-proxy-utils \ 
+    voms-clients-cpp \
+    voms-clients-java
+
+RUN python3 -m pip install --upgrade pip setuptools
+# RUN rm -rf /usr/lib/python3.6/site-packages/ipaddress*
+RUN python3 -m pip install rucio-clients
+RUN python3 -m pip install rucio
+RUN python3 -m pip install j2cli psycopg2-binary
+RUN python3 -m pip install cx_oracle==6.3.1 PyMySQL
+RUN python3 -m pip install numpy
+RUN python3 -m pip install pytz
+RUN python3 -m pip install graphyte
+RUN python3 -m pip install supervisor
+
+ENV PATH $PATH:/opt/rucio/etc
+ADD bashrc /root/.bashrc
+
+ADD Daemon-certs/userkey.pem /opt/rucio/etc
+ADD Daemon-certs/usercertkey.pem /opt/rucio/etc
+ADD Daemon-certs/usercert.pem /opt/rucio/etc
+ADD Daemon-certs/rucio_ca.pem /opt/rucio/etc
+
+RUN chmod 644 /opt/rucio/etc/usercertkey.pem
+RUN chmod 644 /opt/rucio/etc/usercert.pem
+RUN chmod 400 /opt/rucio/etc/userkey.pem
+# RUN voms-proxy-init -cert /opt/rucio/etc/usercert.pem -key /opt/rucio/etc/userkey.pem -valid 3000:00
+# RUN grid-proxy-init -cert /opt/rucio/etc/usercert.pem -key /opt/rucio/etc/userkey.pem -valid 3000:00
+RUN mkdir /etc/grid-security/certificates
+ADD 5fca1cb1.0 /etc/grid-security/certificates/
+
+ADD Daemon-certs/rucio.cfg.j2 /opt/rucio/etc/rucio.cfg
+RUN chmod +x /opt/rucio/etc/rucio.cfg
+RUN ls -s /opt/rucio/etc/
+ADD Daemon-certs/start-daemon-v2.sh /
+RUN chmod +x /start-daemon-v2.sh
+
+ADD Daemon-certs/conveyor-submitter.sh /
+RUN chmod 777 /conveyor-submitter.sh
+RUN chmod -R 777 /conveyor-submitter.sh
+WORKDIR /
+
+# Add scripts 
+ADD /Root-certs/test-root.py /
+ADD /Root-certs/test-upload-root.py /
+ADD /Root-certs/test-create-files.py /
+ADD /Root-certs/test-create-rules-root.py / 
+ADD /Root-certs/lfn2pfn.py / 
+ADD /Root-certs/MAGIC_dataset.txt /
+
+# Install logrotate
+RUN yum -y install logrotate
+#Copy logrotate daemon configuration
+COPY ./daemon_log /etc/logrotate.d/
+
+ADD Daemon-certs/supervisord.conf /etc/supervisord.conf
+ADD Daemon-certs/supervisord.conf /etc/supervisor/conf.d/
+ADD Daemon-certs/rucio-daemons.ini /etc/supervisord.d/rucio-daemons.ini
+
+RUN yum clean all && \
+    rm -rf /var/cache/yum
+
+# create supervisord user
+# RUN /usr/sbin/useradd --create-home --home-dir /usr/local/daemon --shell /bin/bash daemon
+# RUN chown -R daemon: /
+
+# start supervisord when container launches
+# CMD ["/usr/bin/supervisord", "supervisord -c /etc/supervisord.conf --nodaemon"]
+# Start rucio-daemons and supervisor
+# CMD supervisord -c /etc/supervisord.conf --nodaemon
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

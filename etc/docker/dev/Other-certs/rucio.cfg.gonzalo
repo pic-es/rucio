@@ -1,0 +1,16 @@
+[client]
+rucio_host = https://rucio:443
+auth_host = https://rucio:443
+#auth_type = x509_proxy
+auth_type = userpass
+account = gonzalo
+username = gonzalo_user
+password = pwd123
+ca_cert = /opt/rucio/etc/rucio_ca.pem
+client_cert = /opt/rucio/etc/gonzalouser.pem
+client_key = /opt/rucio/etc/gonzalouser.key.pem
+client_x509_proxy = $X509_USER_PROXY
+request_retries = 3
+protocol_stat_retries = 6
+
+

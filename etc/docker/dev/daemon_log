@@ -1,0 +1,10 @@
+/var/log/daemon_logs/*.log {
+        daily
+        dateext
+        missingok
+        rotate 30
+        compress
+        delaycompress
+        notifempty
+        sharedscripts
+}

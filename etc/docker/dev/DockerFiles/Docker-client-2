@@ -1,0 +1,69 @@
+FROM centos:7
+RUN echo "Building client"
+
+# Required repos
+ADD "http://dmc-repo.web.cern.ch/dmc-repo/dmc-ci-el7.repo" "/etc/yum.repos.d/"
+ADD "http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo" "/etc/yum.repos.d/"
+
+RUN yum install -y epel-release.noarch
+RUN yum upgrade -y
+RUN yum install -y root nano git tree make httpd python3 python3-mod_wsgi libaio gcc python36-devel.x86_64 mod_ssl openssl-devel.x86_64 python3-m2crypto libnsl.x86_64 cronie ruby
+
+# Add voms dependencies 
+RUN yum install -y globus-proxy-utils voms-clients-cpp voms-clients-java
+
+# Add gfal dependencies 
+RUN yum install -y gfal2-all gfal2-util gfal2-python gfal2-plugin-file gfal2-plugin-gridftp gfal2-plugin-http gfal2-plugin-srm gfal2-plugin-xrootd gfal2 
+
+RUN yum install -y gfal*
+
+RUN rpm -i /tmp/oic.rpm; \
+    echo "/usr/lib/oracle/12.2/client64/lib" >/etc/ld.so.conf.d/oracle.conf; \
+    ldconfig
+
+RUN python3 -m pip install --upgrade pip setuptools
+RUN python3 -m pip install rucio-clients
+
+RUN python3 -m pip install j2cli psycopg2-binary
+RUN python3 -m pip install cx_oracle==6.3.1 PyMySQL
+RUN python3 -m pip install numpy
+RUN python3 -m pip install pytz
+RUN python3 -m pip install graphyte
+
+# To generate the configuration and enable bash completion for the rucio clients
+
+ENV PATH $PATH:/opt/rucio/etc
+ADD bashrc /root/.bashrc
+ADD /Other-certs/rucio.cfg.agus /opt/rucio/etc/rucio.cfg
+
+# Add scripts 
+ADD /Other-certs/test-bruzzese.py /
+ADD /Other-certs/test-upload-bruzzese.py /
+ADD /Other-certs/test-create-files-bruzzese.py /
+ADD /Other-certs/test-create-rules-bruzzese.py / 
+ADD /Other-certs/lfn2pfn.py / 
+ADD /Other-certs/MAGIC_dataset.txt /
+
+# Add certificates
+RUN mkdir /.globus
+RUN mkdir -p /etc/grid-security/certificates/
+ADD /Server-files/certs/* /etc/grid-security/certificates/
+
+ADD /Other-certs/agususer.pem /opt/rucio/etc/agususer.pem
+ADD /Other-certs/agususer.key.pem /opt/rucio/etc/agususer.key.pem
+ADD /Other-certs/CERN-bundle.pem /opt/rucio/etc
+ADD /Other-certs/rucio_ca.pem /opt/rucio/etc
+
+RUN chmod 644 /opt/rucio/etc/agususer.pem
+RUN chmod 400 /opt/rucio/etc/agususer.key.pem
+
+RUN voms-proxy-init -cert /opt/rucio/etc/agususer.pem -key /opt/rucio/etc/agususer.key.pem -valid 3000:00
+RUN grid-proxy-init -cert /opt/rucio/etc/agususer.pem -key /opt/rucio/etc/agususer.key.pem -valid 3000:00
+ADD 5fca1cb1.0 /etc/grid-security/certificates/
+
+RUN chmod +x /*.py
+
+RUN yum clean all && \
+    rm -rf /var/cache/yum
+
+CMD ["/usr/sbin/init", "/bin/bash", "./entrypoint.sh"]
