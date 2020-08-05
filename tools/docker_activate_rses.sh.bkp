@@ -25,20 +25,19 @@ rucio-admin rse add --non-deterministic PIC-NON-DET
 
 # https://dcdoor01-dev.pic.es:8452/
 #rucio-admin rse set-attribute --rse PIC-NON-DET --key type --value HTTPS
+#rucio-admin rse set-attribute --rse PIC-NON-DET --key lfn2pfn_algorithm --value identity
 #rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme https --prefix //rucio --port 8452 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-NON-DET
 
 # https://dcdoor01-dev.pic.es:1094/
-#rucio-admin rse set-attribute --rse PIC-NON-DET --key lfn2pfn_algorithm --value identity
-
-#rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme root --prefix //pnfs/pic.es/data/escape2 --port 1094 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-NON-DET
-rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme https --prefix //escape2 --port 8453 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-NON-DET
+rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme root --prefix //pnfs/pic.es/data/escape2 --port 1094 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-NON-DET
 
 
 # root://dcdoor01-dev.pic.es:1094/
-#rucio-admin rse set-attribute --rse PIC-DET --key lfn2pfn_algorithm --value hash
-
 # rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme root --prefix //pnfs/pic.es/data/escape/rucio --port 1094 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-DET
-rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme https --prefix //rucio --port 8452 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-DET
+# rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme root --prefix //rucio --port 1094 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-DET
+
+#rucio-admin rse set-attribute --rse PIC-DET --key lfn2pfn_algorithm --value hash
+rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme root --prefix //pnfs/pic.es/data/escape/rucio --port 1094 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-DET
 
 # Enable FTS
 rucio-admin rse set-attribute --rse PIC-DET --key fts --value https://fts01.pic.es:8446 
@@ -51,8 +50,6 @@ rucio-admin rse add-distance --distance 1 --ranking 1 PIC-NON-DET PIC-DET
 # Indefinite limits for root
 rucio-admin account set-limits root PIC-DET -1
 rucio-admin account set-limits root PIC-NON-DET -1
-rucio-admin account set-limits abruzzese PIC-DET -1
-rucio-admin account set-limits abruzzese PIC-NON-DET -1
 
 # Create a default scope for testing
 rucio-admin scope add --account root --scope test-root
@@ -70,5 +67,4 @@ rucio upload --rse PIC-DET --scope test-root file11
 # rucio upload --rse PIC-NON-DET --scope test-root file2
 # rucio -v upload --rse PIC-NON-DET --pfn root://dcdoor01-dev.pic.es:1094//pnfs/pic.es/data/escape/rucio/test-root/file21 --scope test-root file21 
 # rucio -v upload --rse PIC-NON-DET --pfn https://dcdoor01-dev.pic.es:8452//rucio/test-root/file21 --scope test-root file21 
-# rucio -v upload --rse PIC-NON-DET --pfn root://dcdoor01-dev.pic.es:1094//pnfs/pic.es/data/escape2/test-root/file21 --scope test-root file21
-rucio -v upload --rse PIC-NON-DET --pfn https://dcdoor01-dev.pic.es:8453//escape2/test-root/file21 --scope test-root file21
+rucio -v upload --rse PIC-NON-DET --pfn root://dcdoor01-dev.pic.es:1094//pnfs/pic.es/data/escape2/test-root/file21 --scope test-root file21
