@@ -99,28 +99,6 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-echo 'Sync rse_repository'
-if test ${special};then
-    tools/sync_rses.py etc/rse_repository.json.special
-    if [ $? != 0 ]; then
-        echo 'Failed to sync!'
-        exit 1
-    fi
-else
-    tools/sync_rses.py
-    if [ $? != 0 ]; then
-        echo 'Failed to sync!'
-        exit 1
-    fi
-fi
-
-echo 'Sync metadata keys'
-tools/sync_meta.py
-if [ $? != 0 ]; then
-    echo 'Failed to sync!'
-    exit 1
-fi
-
 echo 'Bootstrap tests: Create jdoe account/mock scope'
 tools/bootstrap_tests.py
 if [ $? != 0 ]; then
