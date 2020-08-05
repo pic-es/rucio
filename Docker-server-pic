@@ -1,0 +1,69 @@
+FROM rucio/rucio-dev
+
+run yum update -y && \
+      yum install -y git \
+      vim \
+      bzip2 \
+      nano \ 
+      kernel-devel \
+      gcc \
+      make \
+      perl \
+      python-devel \
+      python-psycopg2 \
+      osg-pki-tools \
+      fetch-crl \
+      memcached \
+      postgresql10-server \
+      postgresql10 \
+      gfal2 \
+      tree \
+      which \
+      gfal2-python \
+      gfal2-util \
+      gfal2-all \
+      globus-proxy-utils \
+      voms-clients-cpp \
+      httpd-devel \
+      openssl-devel \
+      mod_wsgi \
+      mod_auth_kerb \
+      supervisor \
+      gridsite && \
+      yum clean all && \
+      rm -rf /var/cache/yum
+
+RUN mkdir -p /opt/rucio/etc/user-cert/
+RUN mkdir -p /opt/rucio/etc/host-cert/
+RUN mkdir -p /etc/vomses
+RUN python -m pip install supervisor
+
+ADD Daemon-certs/start-daemon-v2.sh /
+RUN chmod 777 /start-daemon-v2.sh
+RUN chmod -R 777 /start-daemon-v2.sh
+RUN chmod +x /start-daemon-v2.sh
+
+# ADD files 
+ADD /Server-files/certs/* /etc/grid-security/certificates/
+ADD /Server-files/vomses/* /etc/vomses/
+ADD /Server-files/run_daemons /usr/local/bin/
+ADD /Server-files/rucio.cfg /opt/rucio/etc/rucio.cfg
+ADD /Server-files/rucio.conf /etc/httpd/conf.d/rucio.conf
+ADD /Server-files/docker-entrypoint.sh /
+ADD /Server-files/monit-entrypoint.sh /
+ADD /Server-files/user-host-certs/* /etc/grid-security/
+ADD /Server-files/00-mpm.conf /etc/httpd/conf.modules.d/
+ADD /Server-files/supervisord.conf /etc/supervisord.conf
+ADD /Server-files/supervisord.conf /etc/supervisor/conf.d/
+ADD /Server-files/rucio-daemons.ini /etc/supervisord.d/rucio-daemons.ini
+ADD /Server-files/conveyor-submitter.sh /
+ADD /Server-files/run_daemons_agus.sh /
+
+RUN chmod 777 /conveyor-submitter.sh
+RUN chmod -R 777 /conveyor-submitter.sh
+RUN chmod 777 /run_daemons_agus.sh
+
+RUN ls /opt/rucio/tools/
+RUN chmod +x /usr/local/bin/run_daemons
+
+
