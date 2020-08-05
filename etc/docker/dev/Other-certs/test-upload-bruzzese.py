@@ -54,7 +54,7 @@ import linecache
 # Rucio settings 
 rulesClient = RuleClient()
 
-account='bruzzese'
+account='abruzzese'
 auth_type='x509_proxy'
 
 # account=account, auth_type=auth_type
@@ -76,8 +76,8 @@ gfal = Gfal2Context()
 
 # Global variables definition : 
 
-DEFAULT_ORIGIN_RSE = 'XRD1-DET'
-DEFAULT_SCOPE = 'test-bruzzese'
+DEFAULT_ORIGIN_RSE = 'PIC-DET'
+DEFAULT_SCOPE = 'test-abruzzese'
 
 # Generate a random file : 
 

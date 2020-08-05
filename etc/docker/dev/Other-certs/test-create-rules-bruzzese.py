@@ -147,21 +147,21 @@ class Rucio :
         """
         Check if a replica of the given file at the site already exists.
         """
-        if lfn : 
-            replicas = list(
-                self.client.list_replicas([{
-                    'scope': self.myscope,
-                    'name': lfn
-                }], rse_expression=dest_rse))
+        print('here', self.myscope, lfn, dest_rse)
+        if lfn :
+            try:  
+                replicas = list(
+                    self.client.list_replicas([{'scope': self.myscope,'name': lfn}], rse_expression=dest_rse))
 
-            if replicas:
-                for replica in replicas:
-                    if isinstance(replica,dict) :
-                        if dest_rse in replica['rses']:
-                            path = replica['rses'][dest_rse][0]
-                            return(path)
-            return(False)
-        
+                if replicas:
+                    for replica in replicas:
+                        if isinstance(replica,dict) :
+                            if dest_rse in replica['rses']:
+                                path = replica['rses'][dest_rse][0]
+                                return(path)
+                return(False)
+            except:
+                pass
     ############################
 
     ## Create Metadata for DIDs
@@ -183,6 +183,7 @@ class Rucio :
         '''
         name = os.path.basename(p_file)
         name = name.replace('/','')
+        name = name.replace('%','_')
 
         replica = {
         'scope': self.myscope,
@@ -264,26 +265,30 @@ class Rucio :
 
     ############################
     def create_groups(self, organization) :
+ 
+        #print(organization)
+        # 2.1) Create the dataset and containers for the file
+        self.createDataset(organization['dataset_1'].replace('%','_'))
+        # 2.1.1) Attach the dataset and containers for the file
+        self.registerIntoGroup(organization['replica'].replace('%','_'), organization['dataset_1'].replace('%','_'))
 
-        # 2.1) Create the dataset and containers for the file 
-        self.createDataset(organization['dataset_1']) 
-        # 2.1.1) Attach the dataset and containers for the file 
-        self.registerIntoGroup(organization['replica'], organization['dataset_1'])        
+        # 2.2) Create the dataset and containers for the file
+        self.createcontainer(organization['container_1'].replace('%','_'))
+        # 2.2.1) Attach the dataset and containers for the file
+        self.registerIntoGroup(organization['dataset_1'].replace('%','_'), organization['container_1'].replace('%','_'))
 
-        # 2.2) Create the dataset and containers for the file 
-        self.createcontainer(organization['container_1']) 
-        # 2.2.1) Attach the dataset and containers for the file 
-        self.registerIntoGroup(organization['dataset_1'], organization['container_1'])        
+        # 2.3) Create the dataset and containers for the file
+        self.createcontainer(organization['container_2'].replace('%','_'))
+        # 2.3.1) Attach the dataset and containers for the file
+        self.registerIntoGroup(organization['container_1'].replace('%','_'), organization['container_2'].replace('%','_'))
 
-        # 2.3) Create the dataset and containers for the file 
-        self.createcontainer(organization['container_2']) 
-        # 2.3.1) Attach the dataset and containers for the file 
-        self.registerIntoGroup(organization['container_1'], organization['container_2'])        
+        # 2.4) Create the dataset and containers for the file
+        self.createcontainer(organization['container_3'].replace('%','_'))
+        # 2.4.1) Attach the dataset and containers for the file
+        self.registerIntoGroup(organization['container_2'].replace('%','_'), organization['container_3'].replace('%','_'))
 
-        # 2.4) Create the dataset and containers for the file 
-        self.createcontainer(organization['container_3']) 
-        # 2.4.1) Attach the dataset and containers for the file             
-        self.registerIntoGroup(organization['container_2'], organization['container_3'])   
+
+
 
     
     ############################
@@ -594,9 +599,11 @@ def register_rucio() :
                 
                 # Break down the file path
                 f_name = base=os.path.basename(name)
-
+                f_name2 = f_name.replace('%','_')
+                f_name2 = f_name2.replace('+','_')
                 # Check if file is already is registered at a particular destination RSE
-                check = r1.check_replica(lfn=f_name.replace('+','_'), dest_rse=dest)
+                print(f_name2, dest) 
+                check = r1.check_replica(lfn=f_name2, dest_rse=dest)
                 
                 # If it is registered, skip add replica 
                 if check != False : ## needs to be changed to False
@@ -744,9 +751,9 @@ if __name__ == '__main__':
     
     # Initialize Rucio class and functions
 
-    r1 = Rucio(myscope='test-bruzzese', orgRse='XRD2-NON-DET', 
-               destRse=['XRD1-DET'], 
-               account='bruzzese', working_folder='Server-test')
+    r1 = Rucio(myscope='test-abruzzese', orgRse='PIC-NON-DET', 
+               destRse=['PIC-DET'], 
+               account='abruzzese', working_folder='Server-test')
 
     r1.myfunc() 
 
@@ -779,4 +786,5 @@ if __name__ == '__main__':
 
     # 3) Plot RSE usage 
     g1.send_to_graf(r1.stats_usage_rules(r1.rses()))'''
+
 

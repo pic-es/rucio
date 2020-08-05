@@ -93,7 +93,7 @@ RUN python3 -m pip install -r requirements.readthedocs.txt
 
 
 RUN cat /etc/httpd/conf.d/rucio.conf
-RUN httpd -k graceful
+
 RUN ls /opt/rucio/tools/
 
 CMD ["/usr/sbin/init", "/bin/bash", "/docker-entrypoint.sh"]
