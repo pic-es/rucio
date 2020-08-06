@@ -40,9 +40,16 @@ rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme https --pre
 # rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme root --prefix //pnfs/pic.es/data/escape/rucio --port 1094 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-DET
 rucio-admin rse add-protocol --hostname dcdoor01-dev.pic.es --scheme https --prefix //rucio --port 8452 --impl rucio.rse.protocols.gfal.Default --domain-json '{"wan": {"read": 1, "write": 1, "delete": 1, "third_party_copy": 1}, "lan": {"read": 1, "write": 1, "delete": 1}}' PIC-DET
 
+rucio-admin rse delete-attribute --rse PIC-DET --key fts --value https://fts01.pic.es:8446
+rucio-admin rse delete-attribute --rse PIC-NON-DET --key fts --value https://fts01.pic.es:8446
+rucio-admin rse delete-attribute --rse PIC-DET --key fts_testing --value https://fts01.pic.es:8446
+rucio-admin rse delete-attribute --rse PIC-NON-DET --key fts_testing --value https://fts01.pic.es:8446
+
 # Enable FTS
 rucio-admin rse set-attribute --rse PIC-DET --key fts --value https://fts01.pic.es:8446 
 rucio-admin rse set-attribute --rse PIC-NON-DET --key fts --value https://fts01.pic.es:8446 
+rucio-admin rse set-attribute --rse PIC-DET --key fts_testing --value https://fts01.pic.es:8446
+rucio-admin rse set-attribute --rse PIC-NON-DET --key fts_testing --value https://fts01.pic.es:8446
 
 # Fake a full mesh network
 rucio-admin rse add-distance --distance 1 --ranking 1 PIC-DET PIC-NON-DET

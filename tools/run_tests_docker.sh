@@ -59,6 +59,8 @@ rm -rf /tmp/rucio_rse/*
 echo 'Removing old SQLite databases'
 rm -f /tmp/rucio.db
 
+tools/docker_activate_rses.sh
+
 if test ${special}; then
     if [ -f /opt/rucio/etc/rucio.cfg ]; then
         echo 'Remove rucio.cfg'
@@ -99,7 +101,8 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-echo 'Bootstrap tests: Create jdoe account/mock scope'
+echo 'Bootstrap tests: Create accounts/mock scope'
+tools/fts_proxy
 tools/bootstrap_tests.py
 if [ $? != 0 ]; then
     echo 'Failed to bootstrap!'
@@ -109,6 +112,9 @@ fi
 if test ${activate_rse}; then
     echo 'Activating default RSEs (XRD1, XRD2, XRD3)'
     tools/docker_activate_rses.sh
+    systemctl disable memcached
+    mv /usr/bin/memcached /usr/bin/memcached.bkp
+    supervisord -c /etc/supervisord.conf --nodaemon &
 fi
 
 
@@ -124,7 +130,5 @@ else
     noseopts="--exclude=test_alembic --exclude=.*test_rse_protocol_.* --exclude=test_rucio_server --exclude=test_objectstore --exclude=test_auditor* --exclude=test_release* --exclude=test_throttler --exclude=test_dirac"
     nosetests -v --logging-filter=-sqlalchemy,-requests,-rucio.client.baseclient $noseopts
 fi
-
-supervisord -c /etc/supervisord.conf --nodaemon &
 
 exit $?
