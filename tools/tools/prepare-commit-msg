@@ -1,0 +1,16 @@
+#!/bin/sh
+
+NUMBER=$(git branch | grep '*' | grep 'patch\|feature\|hotfix' | cut -d- -f2)
+if [ -z $NUMBER ]
+then
+    echo "Not a patch or feature or hotfix branch"
+else
+    EDITMSG=$(cat $1)
+    if echo $EDITMSG | grep "# Please enter the commit message for your changes.*"
+    then
+	echo "No commit message given, preparing template for editing."
+	sed -i "1s/^/\<component\>: \<message\>; Fix \#$NUMBER/" $1
+    else
+	echo "Using CLI commit message."
+    fi
+fi
