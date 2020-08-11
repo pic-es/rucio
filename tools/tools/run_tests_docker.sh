@@ -59,8 +59,6 @@ rm -rf /tmp/rucio_rse/*
 echo 'Removing old SQLite databases'
 rm -f /tmp/rucio.db
 
-tools/docker_activate_rses.sh
-
 if test ${special}; then
     if [ -f /opt/rucio/etc/rucio.cfg ]; then
         echo 'Remove rucio.cfg'
