@@ -22,6 +22,10 @@ run yum update -y && \
       gfal2-python \
       gfal2-util \
       gfal2-all \
+      python3 \
+      python3-mod_wsgi \
+      python36-devel.x86_64 \
+      python3-m2crypto \
       globus-proxy-utils \
       voms-clients-cpp \
       httpd-devel \
@@ -32,6 +36,61 @@ run yum update -y && \
       gridsite && \
       yum clean all && \
       rm -rf /var/cache/yum
+
+# Required repos
+RUN yum install -y wget
+ADD "http://dmc-repo.web.cern.ch/dmc-repo/dmc-ci-el7.repo" "/etc/yum.repos.d/"
+
+ADD "http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo" "/etc/yum.repos.d/"
+RUN yum -y install https://repo.opensciencegrid.org/osg/3.5/osg-3.5-el7-release-latest.rpm
+
+RUN yum --setopt=tsflags=nodocs -y install epel-release yum-plugin-ovl \
+   && yum --setopt=tsflags=nodocs -y install fetch-crl wn sysstat git vim gcc cmake make ca-policy-egi-core ca-policy-lcg \
+           voms-clients-cpp voms \
+   && yum clean all
+
+# Add gfal dependencies
+RUN yum install -y gfal2-all \
+   gfal2-util \
+   gfal2-python \
+   gfal2-plugin-file \
+   gfal2-plugin-gridftp \
+   gfal2-plugin-http \
+   gfal2-plugin-srm \
+   gfal2-plugin-xrootd \
+   gfal2 \
+   gfal2-python3 \
+   boost-python36 \
+   gfal2-debuginfo \
+   gfal2-devel \
+   gfal2-doc \
+   gfal2-plugin-mock \
+   gfal2-python-debuginfo \
+   gfal2-python-doc \
+   gfal2-tests \
+   python3-gfal2 \
+   boost-python36 \
+   glib2-devel \
+   gtest \
+   libattr-devel \
+   && yum clean all
+
+
+RUN python3 -m pip install --upgrade pip setuptools
+#RUN yum install gfal2-devel gfal2-doc gfal2-plugin-mock gfal2-python-doc gfal2-python3 boost-python36 glib2-devel libattr-devel
+RUN yum install -y gfal2-all gfal2-util gfal2-python gfal2-plugin-file gfal2-plugin-gridftp gfal2-plu$
+
+
+RUN rm -rf /usr/lib/python3.6/site-packages/ipaddress*
+RUN python3 -m pip install rucio
+RUN python3 -m pip install rucio-clients
+
+RUN python3 -m pip install j2cli psycopg2-binary
+RUN python3 -m pip install cx_oracle==6.3.1 PyMySQL
+RUN python3 -m pip install numpy
+RUN python3 -m pip install pytz
+RUN python3 -m pip install graphyte
+RUn python3 -m pip install supervisor
 
 RUN mkdir -p /opt/rucio/etc/user-cert/
 RUN mkdir -p /opt/rucio/etc/host-cert/
@@ -44,7 +103,7 @@ RUN chmod -R 777 /start-daemon-v2.sh
 RUN chmod +x /start-daemon-v2.sh
 
 # ADD files 
-ADD /Server-files/certs/* /etc/grid-security/certificates/
+#ADD /Server-files/certs/* /etc/grid-security/certificates/
 ADD /Server-files/vomses/* /etc/vomses/
 ADD /Server-files/run_daemons /usr/local/bin/
 ADD /Server-files/rucio.cfg /opt/rucio/etc/rucio.cfg
@@ -58,10 +117,13 @@ ADD /Server-files/supervisord.conf /etc/supervisor/conf.d/
 ADD /Server-files/rucio-daemons.ini /etc/supervisord.d/rucio-daemons.ini
 ADD /Server-files/conveyor-submitter.sh /
 ADD /Server-files/run_daemons_agus.sh /
+ADD /Server-files/bashrc /root/.bashrc
+ADD /Server-files/renew_proxy.sh /renew_proxy.sh	
 
 RUN chmod 777 /conveyor-submitter.sh
 RUN chmod -R 777 /conveyor-submitter.sh
 RUN chmod 777 /run_daemons_agus.sh
+RUN chmod 777 /renew_proxy.sh
 
 RUN ls /opt/rucio/tools/
 RUN chmod +x /usr/local/bin/run_daemons
