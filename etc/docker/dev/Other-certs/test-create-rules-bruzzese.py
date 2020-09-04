@@ -54,8 +54,8 @@ from rucio.client.client import Client
 from rucio.client.didclient import DIDClient
 from rucio.client.replicaclient import ReplicaClient
 import rucio.rse.rsemanager as rsemgr
-from rucio.client import RuleClient
-
+# from rucio.client import RuleClient
+from rucio.client.ruleclient import RuleClient
 from rucio.common.exception import (AccountNotFound, Duplicate, RucioException, DuplicateRule, InvalidObject, DataIdentifierAlreadyExists, FileAlreadyExists, RucioException,
                                     AccessDenied, InsufficientAccountLimit, RuleNotFound, AccessDenied, InvalidRSEExpression,
                                     InvalidReplicationRule, RucioException, DataIdentifierNotFound, InsufficientTargetRSEs,
@@ -348,11 +348,24 @@ class Rucio :
             self.registerIntoGroup(outdated, carrier_dataset)
             
         # Add dummy dataset for replicating at Destination RSE
-        rule_child = self.addReplicaRule(dest_RSE, group=carrier_dataset)
+        # Sometimes Rucio ends up with an error message like this : rucio.common.exception.RuleNotFound: No replication rule found. 
+        # In order to avoid that nonsense error we do the following loop :
+        for i in range(0,100):
+            while True:
+                try:
+                    # do stuff
+                    rule = self.addReplicaRule(dest_RSE, group=carrier_dataset)
+                    if rule != None :
+                        rule_child = rule 
+                except SomeSpecificException:
+                    continue
+                break
+        
 
         # Add dummy dataset for replicating Origin RSE
         rule_parent = self.addReplicaRule(org_RSE, group=carrier_dataset)
         
+        print(rule_child, rule_parent)
         # Create a relation rule between origin and destiny RSE, so that the source data can be deleted 
         rule = self.client.update_replication_rule(rule_id=rule_parent, options={'lifetime': 10, 'child_rule_id':rule_child, 'purge_replicas':True})
         logger.debug('| - - - - Creating relationship between parent %s and child %s : %s' % (rule_parent, rule_child, rule))
@@ -786,5 +799,4 @@ if __name__ == '__main__':
 
     # 3) Plot RSE usage 
     g1.send_to_graf(r1.stats_usage_rules(r1.rses()))'''
-
 
