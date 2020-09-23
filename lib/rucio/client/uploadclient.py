@@ -1,4 +1,4 @@
-# Copyright 2012-2018 CERN for the benefit of the ATLAS collaboration.
+# Copyright 2012-2020 CERN for the benefit of the ATLAS collaboration.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,25 @@
 # Authors:
 # - Ralph Vigne <ralph.vigne@cern.ch>, 2012-2015
 # - Thomas Beermann <thomas.beermann@cern.ch>, 2012
-# - Vincent Garonne <vgaronne@gmail.com>, 2012-2018
-# - Martin Barisits <martin.barisits@cern.ch>, 2017
+# - Vincent Garonne <vincent.garonne@cern.ch>, 2012-2018
+# - Martin Barisits <martin.barisits@cern.ch>, 2017-2020
 # - Tobias Wegner <twegner@cern.ch>, 2018
+# - Joaquin Bogado <jbogado@linti.unlp.edu.ar>, 2018
 # - Nicolo Magini <nicolo.magini@cern.ch>, 2018
+# - Tomas Javurek <tomas.javurek@cern.ch>, 2018-2020
+# - Ale Di Girolamo <alessandro.di.girolamo@cern.ch>, 2018
 # - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2018
+# - James Perry <j.perry@epcc.ed.ac.uk>, 2019-2020
+# - Boris Bauermeister <boris.bauermeister@fysik.su.se>, 2019
+# - David Cameron <david.cameron@cern.ch>, 2019
 # - Gabriele Fronze' <gfronze@cern.ch>, 2019
+# - Jaroslav Guenther <jaroslav.guenther@cern.ch>, 2019
 # - Andrew Lister <andrew.lister@stfc.ac.uk>, 2019
 # - Dimitrios Christidis <dimitrios.christidis@cern.ch>, 2020
+# - Patrick Austin <patrick.austin@stfc.ac.uk>, 2020
+# - Eli Chadwick <eli.chadwick@stfc.ac.uk>, 2020
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
+# - Mario Lassnig <mario.lassnig@cern.ch>, 2020
 #
 # PY3K COMPATIBLE
 
@@ -40,7 +51,8 @@ from rucio.common.config import config_get_int
 from rucio.common.exception import (RucioException, RSEBlacklisted, DataIdentifierAlreadyExists, RSEOperationNotSupported,
                                     DataIdentifierNotFound, NoFilesUploaded, NotAllFilesUploaded, FileReplicaAlreadyExists,
                                     ResourceTemporaryUnavailable, ServiceUnavailable, InputValidationError, RSEChecksumUnavailable)
-from rucio.common.utils import adler32, detect_client_location, execute, generate_uuid, make_valid_did, md5, send_trace, GLOBALLY_SUPPORTED_CHECKSUMS
+from rucio.common.utils import (adler32, detect_client_location, execute, generate_uuid, make_valid_did, md5, send_trace,
+                                retry, GLOBALLY_SUPPORTED_CHECKSUMS)
 from rucio.rse import rsemanager as rsemgr
 from rucio import version
 
@@ -59,6 +71,7 @@ class UploadClient:
             logger.disabled = True
 
         self.logger = logger
+
         self.client = _client if _client else Client()
         self.client_location = detect_client_location()
         # if token should be used, use only JWT tokens
@@ -104,7 +117,6 @@ class UploadClient:
         :raises NotAllFilesUploaded: if not all files were successfully uploaded
         """
         logger = self.logger
-
         self.trace['uuid'] = generate_uuid()
 
         # check given sources, resolve dirs into files, and collect meta infos
@@ -183,7 +195,7 @@ class UploadClient:
             if (self.client_location and 'lan' in rse_settings['domain'] and 'site' in rse_attributes):
                 if self.client_location['site'] == rse_attributes['site']:
                     domain = 'lan'
-            logger.debug('{} is used for the upload'.format(domain))
+            logger.debug('{} domain is used for the upload'.format(domain))
 
             if not no_register and not register_after_upload:
                 self._register_file(file, registered_dataset_dids)
@@ -200,16 +212,16 @@ class UploadClient:
                         logger.info('File already exists on RSE. Previous left overs will be overwritten.')
                         delete_existing = True
             elif not is_deterministic and not no_register:
-                if rsemgr.exists(rse_settings, pfn, domain=domain, auth_token=self.auth_token):
+                if rsemgr.exists(rse_settings, pfn, domain=domain, auth_token=self.auth_token, logger=logger):
                     logger.info('File already exists on RSE with given pfn. Skipping upload. Existing replica has to be removed first.')
                     trace['stateReason'] = 'File already exists'
                     continue
-                elif rsemgr.exists(rse_settings, file_did, domain=domain, auth_token=self.auth_token):
+                elif rsemgr.exists(rse_settings, file_did, domain=domain, auth_token=self.auth_token, logger=logger):
                     logger.info('File already exists on RSE with different pfn. Skipping upload.')
                     trace['stateReason'] = 'File already exists'
                     continue
             else:
-                if rsemgr.exists(rse_settings, pfn if pfn else file_did, domain=domain, auth_token=self.auth_token):
+                if rsemgr.exists(rse_settings, pfn if pfn else file_did, domain=domain, auth_token=self.auth_token, logger=logger):
                     logger.info('File already exists on RSE. Skipping upload')
                     trace['stateReason'] = 'File already exists'
                     continue
@@ -241,8 +253,10 @@ class UploadClient:
 
                 trace['protocol'] = cur_scheme
                 trace['transferStart'] = time.time()
+                logger.debug('Processing upload with the domain: {}'.format(domain))
                 try:
                     pfn = self._upload_item(rse_settings=rse_settings,
+                                            rse_attributes=rse_attributes,
                                             lfn=lfn,
                                             source_dir=file['dirname'],
                                             force_scheme=cur_scheme,
@@ -253,7 +267,7 @@ class UploadClient:
                     logger.debug('Upload done.')
                     success = True
                     file['upload_result'] = {0: True, 1: None, 'success': True, 'pfn': pfn}  # needs to be removed
-                except (ServiceUnavailable, ResourceTemporaryUnavailable) as error:
+                except (ServiceUnavailable, ResourceTemporaryUnavailable, RSEOperationNotSupported, RucioException) as error:
                     logger.warning('Upload attempt failed')
                     logger.info('Exception: %s' % str(error))
                     state_reason = str(error)
@@ -508,10 +522,12 @@ class UploadClient:
             replica['pfn'] = pfn
         return replica
 
-    def _upload_item(self, rse_settings, lfn, source_dir=None, force_pfn=None, force_scheme=None, transfer_timeout=None, delete_existing=False, sign_service=None):
+    def _upload_item(self, rse_settings, rse_attributes, lfn, source_dir=None, force_pfn=None, force_scheme=None, transfer_timeout=None, delete_existing=False, sign_service=None):
         """
             Uploads a file to the connected storage.
 
+            :param rse_settings: dictionary containing the RSE settings
+            :param rse_attributes: dictionary containing the RSE attribute key value pairs
             :param lfn:         a single dict containing 'scope' and 'name'.
                                 Example:
                              {'name': '1_rse_local_put.raw', 'scope': 'user.jdoe', 'filesize': 42, 'adler32': '87HS3J968JSNWID'}
@@ -567,7 +583,7 @@ class UploadClient:
             raise FileReplicaAlreadyExists('File %s in scope %s already exists on storage as PFN %s' % (name, scope, pfn))  # wrong exception ?
 
         # Removing tmp from earlier attempts
-        if protocol_read.exists('%s.rucio.upload' % readpfn):
+        if protocol_read.exists(readpfn_tmp):
             logger.debug('Removing remains of previous upload attemtps.')
             try:
                 # Construct protocol for delete operation.
@@ -590,27 +606,30 @@ class UploadClient:
 
         # Process the upload of the tmp file
         try:
-            protocol_write.put(base_name, pfn_tmp, source_dir, transfer_timeout=transfer_timeout)
+            retry(protocol_write.put, base_name, pfn_tmp, source_dir, transfer_timeout=transfer_timeout)(mtries=2, logger=logger)
             logger.info('Successful upload of temporary file. {}'.format(pfn_tmp))
         except Exception as error:
             raise RSEOperationNotSupported(str(error))
 
         # Is stat after that upload allowed?
-        skip_upload_stat = rse_settings.get('skip_upload_stat', False)
+        skip_upload_stat = rse_attributes.get('skip_upload_stat', False)
+        self.logger.debug('skip_upload_stat=%s', skip_upload_stat)
 
         # Checksum verification, obsolete, see Gabriele changes.
         if not skip_upload_stat:
             try:
-                stats = self._retry_protocol_stat(protocol_read, readpfn_tmp)
+                stats = self._retry_protocol_stat(protocol_write, pfn_tmp)
                 if not isinstance(stats, dict):
                     raise RucioException('Could not get protocol.stats for given PFN: %s' % pfn)
 
                 # The checksum and filesize check
                 if ('filesize' in stats) and ('filesize' in lfn):
+                    self.logger.debug('Filesize: Expected=%s Found=%s' % (lfn['filesize'], stats['filesize']))
                     if int(stats['filesize']) != int(lfn['filesize']):
                         raise RucioException('Filesize mismatch. Source: %s Destination: %s' % (lfn['filesize'], stats['filesize']))
                 if rse_settings['verify_checksum'] is not False:
                     if ('adler32' in stats) and ('adler32' in lfn):
+                        self.logger.debug('Checksum: Expected=%s Found=%s' % (lfn['adler32'], stats['adler32']))
                         if stats['adler32'] != lfn['adler32']:
                             raise RucioException('Checksum mismatch. Source: %s Destination: %s' % (lfn['adler32'], stats['adler32']))
 
@@ -622,7 +641,7 @@ class UploadClient:
             if protocol_write.renaming:
                 logger.debug('Renaming file %s to %s' % (pfn_tmp, pfn))
                 protocol_write.rename(pfn_tmp, pfn)
-        except Exception as e:
+        except Exception:
             raise RucioException('Unable to rename the tmp file %s.' % pfn_tmp)
 
         protocol_write.close()
@@ -632,19 +651,29 @@ class UploadClient:
 
     def _retry_protocol_stat(self, protocol, pfn):
         """
-        try to stat file, on fail try again 1s, 2s, 4s, 8s, 16s, 32s later. Fail is all fail
+        Try to stat file, on fail try again 1s, 2s, 4s, 8s, 16s, 32s later. Fail is all fail
         :param protocol     The protocol to use to reach this file
         :param pfn          Physical file name of the target for the protocol stat
         """
         retries = config_get_int('client', 'protocol_stat_retries', raise_exception=False, default=6)
         for attempt in range(retries):
             try:
+                self.logger.debug('stat: pfn=%s' % pfn)
                 stats = protocol.stat(pfn)
+
+                if int(stats['filesize']) == 0:
+                    raise Exception('Filesize came back as 0. Potential storage race condition, need to retry.')
+
                 return stats
             except RSEChecksumUnavailable as error:
                 # The stat succeeded here, but the checksum failed
                 raise error
             except Exception as error:
+                self.logger.debug('stat: unexpected error=%s' % error)
+                fail_str = ['The requested service is not available at the moment', 'Permission refused']
+                if any(x in str(error) for x in fail_str):
+                    raise error
+                self.logger.debug('stat: unknown edge case, retrying in %ss' % 2**attempt)
                 time.sleep(2**attempt)
         return protocol.stat(pfn)
 

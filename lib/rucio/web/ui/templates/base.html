@@ -1,4 +1,4 @@
-$def with (token, account, rucio_ui_version, policy, content)
+$def with (token, account, vo, multi_vo, rucio_ui_version, policy, content)
 <!--
  Copyright European Organization for Nuclear Research (CERN)
 
@@ -20,6 +20,7 @@ $def with (token, account, rucio_ui_version, policy, content)
   <head>
     $:token
     $:account
+    $:vo
     <title>Rucio UI - $:content.title</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
@@ -66,7 +67,7 @@ $def with (token, account, rucio_ui_version, policy, content)
       <nav class="top-bar" data-topbar role="navigation">
         <ul class="title-area">
           <li class="name">
-            $if policy == 'atlas': <h1><a href="/">ATLAS Rucio UI</a></h1>
+            $if policy == 'atlas': <h1><a href="/">PIC Rucio UI</a></h1>
             $else: <h1><a href="/">Rucio UI</a></h1>
           </li>
           <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
@@ -136,7 +137,11 @@ $def with (token, account, rucio_ui_version, policy, content)
 
           <ul class="right">
             <li id="accountlist" class="has-dropdown">
-              <a>Using account: <span id="current_account">[loading]</span></a>
+              <a>Using account: <span id="current_account">[loading]</span>
+              $if multi_vo:
+                 on VO: <span id="current_vo">[loading]</span></a>
+              $else:
+                </a>
               <ul id="accountselecter" class="dropdown">
               </ul>
             </li>
@@ -151,6 +156,7 @@ $def with (token, account, rucio_ui_version, policy, content)
                   <li><a href="https://www-ftsmon-test.gridpp.rl.ac.uk:8449/fts3/ftsmon/#/">FTS Monitor RAL</a>
                   <li><a href="http://bigpanda.cern.ch/">PanDA Monitor</a>
                   <li><a href="http://adc-monitoring.cern.ch/">ADC Monitoring</a>
+                  <li><a href="https://fts01.pic.es/fts3/ftsmon/#/">PIC FTS Monitoring</a>
                 </ul>
               </li>
 

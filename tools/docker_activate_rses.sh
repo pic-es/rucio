@@ -79,3 +79,6 @@ rucio upload --rse PIC-DET --scope test-root file11
 # rucio -v upload --rse PIC-NON-DET --pfn https://dcdoor01-dev.pic.es:8452//rucio/test-root/file21 --scope test-root file21 
 # rucio -v upload --rse PIC-NON-DET --pfn root://dcdoor01-dev.pic.es:1094//pnfs/pic.es/data/escape2/test-root/file21 --scope test-root file21
 rucio -v upload --rse PIC-NON-DET --pfn https://dcdoor01-dev.pic.es:8453//escape2/test-root/file21 --scope test-root file21
+
+rucio-admin rse set-attribute --key greedyDeletion --value True --rse PIC-NON-DET
+rucio-admin rse set-attribute --key greedyDeletion --value True --rse PIC-DET

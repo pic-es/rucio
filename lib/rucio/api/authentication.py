@@ -1,4 +1,5 @@
-# Copyright 2012-2018 CERN for the benefit of the ATLAS collaboration.
+# -*- coding: utf-8 -*-
+# Copyright 2012-2020 CERN
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +14,16 @@
 # limitations under the License.
 #
 # Authors:
-# - Mario Lassnig <mario@lassnig.net>, 2012-2018
-# - Vincent Garonne <vgaronne@gmail.com>, 2012-2015
+# - Mario Lassnig <mario.lassnig@cern.ch>, 2012-2018
+# - Vincent Garonne <vincent.garonne@cern.ch>, 2012-2015
 # - Martin Barisits <martin.barisits@cern.ch>, 2017
-# - Andrew Lister, <andrew.lister@stfc.ac.uk>, 2019
+# - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2018
+# - Andrew Lister <andrew.lister@stfc.ac.uk>, 2019
 # - Ruturaj Gujar <ruturaj.gujar23@gmail.com>, 2019
-# - Jaroslav Guenther <jaroslav.guenther@cern.ch>, 2019, 2020
+# - Jaroslav Guenther <jaroslav.guenther@cern.ch>, 2019-2020
 # - Eli Chadwick <eli.chadwick@stfc.ac.uk>, 2020
+# - Patrick Austin <patrick.austin@stfc.ac.uk>, 2020
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
 #
 # PY3K COMPATIBLE
 
@@ -31,7 +35,7 @@ from rucio.core import authentication, identity, oidc
 from rucio.db.sqla.constants import IdentityType
 
 
-def refresh_cli_auth_token(token_string, account):
+def refresh_cli_auth_token(token_string, account, vo='def'):
     """
     Checks if there is active refresh token and if so returns
     either active token with expiration timestamp or requests a new
@@ -41,7 +45,7 @@ def refresh_cli_auth_token(token_string, account):
 
     :return: tuple of (access token, expiration epoch), None otherswise
     """
-    account = InternalAccount(account)
+    account = InternalAccount(account, vo=vo)
     return oidc.refresh_cli_auth_token(token_string, account)
 
 
@@ -132,7 +136,8 @@ def get_auth_token_user_pass(account, username, password, appid, ip=None, vo='de
     :param appid: The application identifier as a string.
     :param ip: IP address of the client as a string.
     :param vo: The VO to act on.
-    :returns: Authentication token as a variable-length string.
+
+    :returns: A models.Token object as saved to the database.
     """
 
     kwargs = {'account': account, 'username': username, 'password': password}
@@ -155,7 +160,8 @@ def get_auth_token_gss(account, gsscred, appid, ip=None, vo='def'):
     :param appid: The application identifier as a string.
     :param ip: IP address of the client as a string.
     :param vo: The VO to act on.
-    :returns: Authentication token as a variable-length string.
+
+    :returns: A models.Token object as saved to the database.
     """
 
     kwargs = {'account': account, 'gsscred': gsscred}
@@ -178,7 +184,8 @@ def get_auth_token_x509(account, dn, appid, ip=None, vo='def'):
     :param appid: The application identifier as a string.
     :param ip: IP address of the client as a string.
     :param vo: The VO to act on.
-    :returns: Authentication token as a variable-length string.
+
+    :returns: A models.Token object as saved to the database.
     """
 
     if account is None:
@@ -204,7 +211,8 @@ def get_auth_token_ssh(account, signature, appid, ip=None, vo='def'):
     :param appid: The application identifier as a string.
     :param ip: IP address of the client as a string.
     :param vo: The VO to act on.
-    :returns: Authentication token as a variable-length string.
+
+    :returns: A models.Token object as saved to the database.
     """
 
     kwargs = {'account': account, 'signature': signature}
@@ -226,7 +234,8 @@ def get_ssh_challenge_token(account, appid, ip=None, vo='def'):
     :param appid: The application identifier as a string.
     :param ip: IP address of the client as a string.
     :param vo: The VO to act on.
-    :returns: Challenge token as a variable-length string.
+
+    :returns: A models.Token object as saved to the database.
     """
 
     kwargs = {'account': account}
@@ -248,7 +257,8 @@ def get_auth_token_saml(account, saml_nameid, appid, ip=None, vo='def'):
     :param saml_nameid: NameId returned in SAML response as a string.
     :param appid: The application identifier as a string.
     :param ip: IP address of the client as a string.
-    :returns: Authentication token as a variable-length string.
+
+    :returns: A models.Token object as saved to the database.
     """
 
     kwargs = {'account': account, 'saml_nameid': saml_nameid}

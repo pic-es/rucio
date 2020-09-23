@@ -1,0 +1,99 @@
+FROM centos:7
+
+RUN yum install -y epel-release.noarch && \
+    yum clean all && \
+    rm -rf /var/cache/yum
+RUN yum upgrade -y && \
+    yum clean all && \
+    rm -rf /var/cache/yum
+
+RUN yum update -y && \
+      yum install -y git \
+      vim \
+      bzip2 \
+      nano \ 
+      kernel-devel \
+      gcc \
+      make \
+      perl \
+      tree \
+      python-devel \
+      python-psycopg2 \
+      python3 \
+      python3-mod_wsgi \
+      osg-pki-tools \
+      fetch-crl \
+      memcached \
+      postgresql10-server \
+      postgresql10 \
+      gfal2 \
+      gfal2-python \
+      gfal2-util \
+      gfal2-all \
+      globus-proxy-utils \
+      voms-clients-cpp \
+      httpd-devel \
+      openssl-devel \
+      mod_wsgi \
+      mod_auth_kerb \
+      libselinux-utils \
+      httpd httpd-tools \
+      gridsite && \
+      yum clean all && \
+      rm -rf /var/cache/yum
+
+ENV RUCIOHOME=/opt/rucio
+RUN mkdir -p $RUCIOHOME
+WORKDIR $RUCIOHOME
+
+RUN mkdir -p \
+      bin \
+      etc \
+      lib/rucio \
+      tools
+
+EXPOSE 80
+EXPOSE 443
+
+RUN ln -s $RUCIOHOME/lib/rucio /usr/lib/python2.7/site-packages/rucio
+
+RUN chmod 777 /var/log/rucio/trace
+RUN rm -rf $RUCIOHOME/tools
+RUN mkdir -p $RUCIOHOME/tools
+RUN mkdir -p /etc/httpd
+RUN echo "" > /etc/httpd/conf.d/ssl.conf &&\
+    echo "" > /etc/httpd/conf.d/autoindex.conf &&\
+    echo "" > /etc/httpd/conf.d/userdir.conf &&\
+    echo "" > /etc/httpd/conf.d/welcome.conf &&\
+    echo "" > /etc/httpd/conf.d/zgridsite.conf
+
+ADD /Server-files/rucio_multi_vo_tst.cfg $RUCIOHOME/etc/rucio_multi_vo_tst.cfg
+ADD /Server-files/rucio_multi_vo_ts2.cfg $RUCIOHOME/etc/rucio_multi_vo_ts2.cfg
+ADD /Server-files/alembic.ini $RUCIOHOME/etc/alembic.ini
+ADD /Server-files/aliases-py27.conf $RUCIOHOME/etc/web/aliases-py27.conf
+ADD /Server-files/ui-aliases-py27.conf $RUCIOHOME/etc/web/ui-aliases-py27.conf
+ADD /Server-files/google-cloud-storage-test.json $RUCIOHOME/etc/google-cloud-storage-test.json
+
+ADD /Server-files/run_daemons /usr/local/bin/
+ADD /Server-files/rucio.cfg /opt/rucio/etc/rucio.cfg
+ADD /Server-files/rucio.conf /etc/httpd/conf.d/rucio.conf
+ADD /Server-files/certs/* /etc/grid-security/certificates/
+ADD /Server-files/httpd.conf /etc/httpd/conf/
+ADD /Server-files/docker-entrypoint.sh /
+ADD /Server-files/monit-entrypoint.sh /
+
+RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/run_daemons
+RUN chmod +x /monit-entrypoint.sh
+WORKDIR /
+
+ADD /Server-files/requirements.readthedocs.txt /
+ADD bashrc /root/.bashrc
+RUN python3 -m pip install -r requirements.readthedocs.txt
+
+
+RUN cat /etc/httpd/conf.d/rucio.conf
+
+RUN ls /opt/rucio/tools/
+
+CMD ["/usr/sbin/init", "/bin/bash", "/docker-entrypoint.sh"]

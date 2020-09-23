@@ -1,4 +1,5 @@
-# Copyright 2012-2019 CERN for the benefit of the ATLAS collaboration.
+# -*- coding: utf-8 -*-
+# Copyright 2012-2020 CERN for the benefit of the ATLAS collaboration.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,36 +14,35 @@
 # limitations under the License.
 #
 # Authors:
-# - Vincent Garonne <vgaronne@gmail.com>, 2012-2017
+# - Vincent Garonne <vincent.garonne@cern.ch>, 2012-2017
 # - Thomas Beermann <thomas.beermann@cern.ch>, 2012
 # - Mario Lassnig <mario.lassnig@cern.ch>, 2012-2019
 # - Angelos Molfetas <Angelos.Molfetas@cern.ch>, 2012
 # - Martin Barisits <martin.barisits@cern.ch>, 2014
 # - Cedric Serfon <cedric.serfon@cern.ch>, 2017
-# - Joaquin Bogado <jbogado@linti.unlp.edu.ar>, 2018
+# - Joaquín Bogado <jbogado@linti.unlp.edu.ar>, 2018
 # - Andrew Lister <andrew.lister@stfc.ac.uk>, 2019
 # - Patrick Austin <patrick.austin@stfc.ac.uk>, 2020
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
 
 from __future__ import print_function
 
+import unittest
 from os import remove
 
-from nose.tools import raises
+import pytest
 
 from rucio.client.baseclient import BaseClient
 from rucio.client.client import Client
 from rucio.common.config import config_get, config_get_bool
-from rucio.common.utils import get_tmp_dir
 from rucio.common.exception import CannotAuthenticate, ClientProtocolNotSupported
+from rucio.common.utils import get_tmp_dir
 
 
-class TestBaseClient(object):
+class TestBaseClient(unittest.TestCase):
     """ To test Clients"""
 
-    def setup(self):
-        '''
-        __init__
-        '''
+    def setUp(self):
         if config_get_bool('common', 'multi_vo', raise_exception=False, default=False):
             self.vo = {'vo': config_get('client', 'vo', raise_exception=False, default='tst')}
             try:
@@ -68,17 +68,17 @@ class TestBaseClient(object):
         creds = {'username': 'ddmlab', 'password': 'secret'}
         BaseClient(account='root', ca_cert=self.cacert, auth_type='userpass', creds=creds, **self.vo)
 
-    @raises(CannotAuthenticate)
     def testUserpassWrongCreds(self):
         """ CLIENTS (BASECLIENT): try to authenticate with wrong username."""
         creds = {'username': 'wrong', 'password': 'secret'}
-        BaseClient(account='root', ca_cert=self.cacert, auth_type='userpass', creds=creds, **self.vo)
+        with pytest.raises(CannotAuthenticate):
+            BaseClient(account='root', ca_cert=self.cacert, auth_type='userpass', creds=creds, **self.vo)
 
-    @raises(CannotAuthenticate)
     def testUserpassNoCACert(self):
         """ CLIENTS (BASECLIENT): authenticate with userpass without ca cert."""
         creds = {'username': 'wrong', 'password': 'secret'}
-        BaseClient(account='root', auth_type='userpass', creds=creds, **self.vo)
+        with pytest.raises(CannotAuthenticate):
+            BaseClient(account='root', auth_type='userpass', creds=creds, **self.vo)
 
     def testx509(self):
         """ CLIENTS (BASECLIENT): authenticate with x509."""
@@ -86,26 +86,23 @@ class TestBaseClient(object):
                  'client_key': self.userkey}
         BaseClient(account='root', ca_cert=self.cacert, auth_type='x509', creds=creds, **self.vo)
 
-    @raises(CannotAuthenticate)
     def testx509NonExistingCert(self):
         """ CLIENTS (BASECLIENT): authenticate with x509 with missing certificate."""
         creds = {'client_cert': '/opt/rucio/etc/web/notthere.crt'}
-        BaseClient(account='root', ca_cert=self.cacert, auth_type='x509', creds=creds, **self.vo)
+        with pytest.raises(CannotAuthenticate):
+            BaseClient(account='root', ca_cert=self.cacert, auth_type='x509', creds=creds, **self.vo)
 
-    @raises(ClientProtocolNotSupported)
     def testClientProtocolNotSupported(self):
         """ CLIENTS (BASECLIENT): try to pass an host with a not supported protocol."""
         creds = {'username': 'ddmlab', 'password': 'secret'}
-        BaseClient(rucio_host='localhost', auth_host='junk://localhost', account='root', auth_type='userpass', creds=creds, **self.vo)
+        with pytest.raises(ClientProtocolNotSupported):
+            BaseClient(rucio_host='localhost', auth_host='junk://localhost', account='root', auth_type='userpass', creds=creds, **self.vo)
 
 
-class TestRucioClients(object):
+class TestRucioClients(unittest.TestCase):
     """ To test Clients"""
 
-    def setup(self):
-        '''
-        setup
-        '''
+    def setUp(self):
         if config_get_bool('common', 'multi_vo', raise_exception=False, default=False):
             self.vo = {'vo': config_get('client', 'vo', raise_exception=False, default='tst')}
         else:

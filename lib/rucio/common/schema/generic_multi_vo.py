@@ -57,17 +57,17 @@ SCOPE_LENGTH = 29
 
 SCOPE = {"description": "Scope name",
          "type": "string",
-         "pattern": "^[a-zA-Z_\\-.0-9]{1,%s}$" % (SCOPE_LENGTH - 4)}
+         "pattern": r"^[a-zA-Z_\\-.0-9]{1,%s}$" % (SCOPE_LENGTH - 4)}
 
 R_SCOPE = {"description": "Scope name",
            "type": "string",
            "pattern": "\\w"}
 
-NAME_LENGTH = 250
+NAME_LENGTH = 500
 
 NAME = {"description": "Data Identifier name",
         "type": "string",
-        "pattern": "^[A-Za-z0-9][A-Za-z0-9\\.\\-\\_]{1,%s}$" % NAME_LENGTH}
+        "pattern": r"^\/[A-Za-z0-9][A-Za-z0-9\\.\\-\\_\/\#]{1,%s}$" % NAME_LENGTH}
 
 R_NAME = {"description": "Data Identifier name",
           "type": "string",
@@ -349,7 +349,7 @@ ACCOUNT_ATTRIBUTE = {"description": "Account attribute",
                      "type": "string",
                      "pattern": r'^[a-zA-Z0-9-_\\/\\.]{1,30}$'}
 
-SCOPE_NAME_REGEXP = '/(.*)/(.*)'
+SCOPE_NAME_REGEXP = '/([^/]*)(?=/)(.*)'
 
 DISTANCE = {"description": "RSE distance",
             "type": "object",

@@ -1,4 +1,4 @@
-# Copyright 2019 CERN for the benefit of the ATLAS collaboration.
+# Copyright 2019-2020 CERN for the benefit of the ATLAS collaboration.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,18 +14,14 @@
 #
 # Authors:
 # - Tobias Wegner <twegner@cern.ch>, 2019
-
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
 
 from rucio.common.didtype import DIDType
 from rucio.common.exception import DIDTypeError
-import nose.tools
 
 
-class TestDIDType(object):
+class TestDIDType:
     ''' Test the DIDType class '''
-
-    def setup(self):
-        pass
 
     def _test_did(self, did, cmp_str, diff_half_did=DIDType(scope='diff'), diff_full_did=DIDType('sdiff:ndiff'), is_valid=True):
         stat = 0
@@ -84,21 +80,21 @@ class TestDIDType(object):
             DIDType('non.implicit.single.string')
             print('Exception for invalid DID did not work!')
             self.success = False
-        except DIDTypeError as err:
+        except DIDTypeError:
             pass
 
         try:
             DIDType('invalid', 'user.implicit:user:invalid')
             print('Exception for invalid DID did not work!')
             self.success = False
-        except DIDTypeError as err:
+        except DIDTypeError:
             pass
 
         try:
             DIDType('user.implicit:user:invalid')
             print('Exception for invalid DID did not work!')
             self.success = False
-        except DIDTypeError as err:
+        except DIDTypeError:
             pass
 
-        nose.tools.assert_true(self.success)
+        assert self.success

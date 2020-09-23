@@ -1,4 +1,4 @@
-# Copyright 2012-2019 CERN for the benefit of the ATLAS collaboration.
+# Copyright 2012-2020 CERN for the benefit of the ATLAS collaboration.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # Authors:
 # - Vincent Garonne <vgaronne@gmail.com>, 2012-2018
 # - Thomas Beermann <thomas.beermann@cern.ch>, 2012-2018
-# - Mario Lassnig <mario.lassnig@cern.ch>, 2012-2019
+# - Mario Lassnig <mario.lassnig@cern.ch>, 2012-2020
 # - Cedric Serfon <cedric.serfon@cern.ch>, 2013-2020
 # - Ralph Vigne <ralph.vigne@cern.ch>, 2013
 # - Joaquin Bogado <jbogado@linti.unlp.edu.ar>, 2015-2018
@@ -732,6 +732,8 @@ def clean_surls(surls):
             surl = re.sub('/srm/managerv1\?SFN=', '', surl)  # NOQA: W605
             surl = re.sub('/srm/v2/server\?SFN=', '', surl)  # NOQA: W605
             surl = re.sub('/srm/managerv2\?SFN=', '', surl)  # NOQA: W605
+        if surl.startswith('https://storage.googleapis.com'):
+            surl = surl.split('?GoogleAccessId')[0]
         res.append(surl)
     res.sort()
     return res
@@ -1350,3 +1352,33 @@ def query_bunches(query, bunch_by):
     if item_bunch:
         filtered_bunches.append(item_bunch)
     return filtered_bunches
+
+
+class retry:
+    """Retry callable object with configuragle number of attempts"""
+
+    def __init__(self, func, *args, **kwargs):
+        '''
+        :param func: a method that should be executed with retries
+        :param args parametres of the func
+        :param kwargs: key word arguments of the func
+        '''
+        self.func, self.args, self.kwargs = func, args, kwargs
+
+    def __call__(self, mtries=3, logger=None):
+        '''
+        :param mtries: maximum number of attempts to execute the function
+        :param logger: preferred logger
+        '''
+        attempt = mtries
+        while attempt > 1:
+            try:
+                if logger:
+                    logger.debug('{}: Attempt {}'.format(self.func.__name__, mtries - attempt + 1))
+                return self.func(*self.args, **self.kwargs)
+            except Exception as e:
+                if logger:
+                    logger.debug('{}: Attempt failed {}'.format(self.func.__name__, mtries - attempt + 1))
+                    logger.debug(str(e))
+                attempt -= 1
+        return self.func(*self.args, **self.kwargs)

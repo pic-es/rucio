@@ -10,7 +10,7 @@ if __name__ == '__main__':
     c = Client()
     try:
         c.add_account('abruzzese', 'SERVICE', 'bruzzese@pic.es')
-	add_account_attribute(account=InternalAccount('abruzzese'), key='admin', value=True)
+        add_account_attribute(account=InternalAccount('abruzzese'), key='admin', value=True)
     except Duplicate:
         print('Account abruzzese already added' % locals())
     try:
@@ -25,11 +25,21 @@ if __name__ == '__main__':
         c.add_identity(account='abruzzese', identity='/DC=org/DC=terena/DC=tcs/C=ES/O=Port dInformacio Cientifica/CN=Agustin Bruzzese bruzzese@pic.es', authtype='x509', email='bruzzese@pic.es')
     except Exception:
         print('Already added: ')
+    try:
+        c.add_account('gmerino', 'SERVICE', 'merino@pic.es')
+        add_account_attribute(account=InternalAccount('abruzzese'), key='admin', value=True)
+    except Duplicate:
+        print('Account abruzzese already added' % locals())
+    try:
+        c.add_identity(account='gmerino', identity='gmerino', authtype='userpass', password='pwd123', email='bruzzese@pic.es')
+    except Exception:
+        print('Already added: ')
 
 
     # add your accounts here, if you test against CERN authed nodes
     additional_test_accounts = [('/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mlassnig/CN=663551/CN=Mario Lassnig', 'x509', 'mario.lassnig@cern.ch'),
-                                ('/DC=org/DC=terena/DC=tcs/C=ES/O=Port dInformacio Cientifica/CN=Agustin Bruzzese bruzzese@pic.es', 'x509', 'bruzzese@pic.es')
+                                ('/DC=org/DC=terena/DC=tcs/C=ES/O=Port dInformacio Cientifica/CN=Agustin Bruzzese bruzzese@pic.es', 'x509', 'bruzzese@pic.es'),
+				('/DC=org/DC=terena/DC=tcs/C=ES/postalCode=08193/ST=Barcelona/O=Institut de Fisica d. Altes Energies/OU=Institut de Fisica d.Altes Energies/CN=rucio02.pic.es', 'x509', 'bruzzese@pic.es')
 				]
 
     for i in additional_test_accounts:

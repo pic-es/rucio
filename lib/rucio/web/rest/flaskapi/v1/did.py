@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Copyright 2018 CERN for the benefit of the ATLAS collaboration.
+# -*- coding: utf-8 -*-
+# Copyright 2018-2020 CERN
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +15,16 @@
 # limitations under the License.
 #
 # Authors:
-# - Angelos Molfetas <angelos.molfetas@cern.ch>, 2012
-# - Thomas Beermann <thomas.beermann@cern.ch>, 2012-2018
-# - Vincent Garonne <vincent.garonne@cern.ch>, 2012-2016
-# - Mario Lassnig <mario.lassnig@cern.ch>, 2012-2018
-# - Yun-Pin Sun <yun-pin.sun@cern.ch>, 2013
-# - Cedric Serfon <cedric.serfon@cern.ch>, 2014-2020
-# - Martin Baristis <martin.barisits@cern.ch>, 2014-2015
-# - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2018
+# - Thomas Beermann <thomas.beermann@cern.ch>, 2018
+# - Mario Lassnig <mario.lassnig@cern.ch>, 2018
+# - Cedric Serfon <cedric.serfon@cern.ch>, 2018-2020
+# - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2018-2019
 # - Andrew Lister <andrew.lister@stfc.ac.uk>, 2019
+# - Eli Chadwick <eli.chadwick@stfc.ac.uk>, 2020
+# - Aristeidis Fkiaras <aristeidis.fkiaras@cern.ch>, 2020
+# - Muhammad Aditya Hilmy <didithilmy@gmail.com>, 2020
+# - Alan Malta Rodrigues <alan.malta@cern.ch>, 2020
+# - Martin Barisits <martin.barisits@cern.ch>, 2020
 #
 # PY3K COMPATIBLE
 
@@ -138,6 +140,7 @@ class Search(MethodView):
              "bytes": 234, "length": 3}
 
         :query type: specify a DID type to search for
+        :query limit: The maximum number of DIDs returned.
         :query long: set to True for long output, otherwise only name
         :query recursive: set to True to recursively list DIDs content
         :query created_before: Date string in RFC-1123 format where the creation date was earlier
@@ -158,14 +161,17 @@ class Search(MethodView):
         """
 
         filters = {}
+        limit = None
         long = False
         recursive = False
         type = 'collection'
         for k, v in request.args.items():
             if k == 'type':
                 type = v
+            elif k == 'limit':
+                limit = v[0]
             elif k == 'long':
-                long = v == '1'
+                long = v in ['True', '1']
             elif k == 'recursive':
                 recursive = v == 'True'
             else:
@@ -173,7 +179,7 @@ class Search(MethodView):
 
         try:
             data = ""
-            for did in list_dids(scope=scope, filters=filters, type=type, long=long, recursive=recursive, vo=request.environ.get('vo')):
+            for did in list_dids(scope=scope, filters=filters, type=type, limit=limit, long=long, recursive=recursive, vo=request.environ.get('vo')):
                 data += dumps(did) + '\n'
             return Response(data, content_type='application/x-json-stream')
         except UnsupportedOperation as error:
@@ -216,6 +222,7 @@ class SearchExtended(MethodView):
              "bytes": 234, "length": 3}
 
         :query type: specify a DID type to search for
+        :query limit: The maximum number of DIDs returned.
         :query long: set to True for long output, otherwise only name
         :query recursive: set to True to recursively list DIDs content
         :query created_before: Date string in RFC-1123 format where the creation date was earlier
@@ -236,14 +243,17 @@ class SearchExtended(MethodView):
         """
 
         filters = {}
+        limit = None
         long = False
         recursive = False
         type = 'collection'
         for k, v in request.args.items():
             if k == 'type':
                 type = v
+            elif k == 'limit':
+                limit = v[0]
             elif k == 'long':
-                long = v == '1'
+                long = v in ['True', '1']
             elif k == 'recursive':
                 recursive = v == 'True'
             else:
@@ -251,7 +261,7 @@ class SearchExtended(MethodView):
 
         try:
             data = ""
-            for did in list_dids_extended(scope=scope, filters=filters, type=type, long=long, recursive=recursive, vo=request.environ.get('vo')):
+            for did in list_dids_extended(scope=scope, filters=filters, type=type, limit=limit, long=long, recursive=recursive, vo=request.environ.get('vo')):
                 data += dumps(did) + '\n'
             return Response(data, content_type='application/x-json-stream')
         except UnsupportedOperation as error:

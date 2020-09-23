@@ -1,3 +1,4 @@
+
 version: "2"
 services:
   rucio02.pic.es:
@@ -22,6 +23,10 @@ services:
       - ../../../bin:/opt/rucio/bin
       - ../../../lib:/opt/rucio/lib
       - ./daemon_logs:/var/log/daemon_logs
+      - /etc/grid-security/certificates:/etc/grid-security/certificates
+      - ./Server-files/user-host-certs/:/etc/grid-security/
+      - ./Server-files/httpd.conf:/etc/httpd/conf/httpd.conf
+      - /etc/collectd.d/write_graphite-config.conf:/etc/collectd.d/write_graphite-config.conf
     environment:
       - X509_USER_CERT=/etc/grid-security/usercert.pem
       - X509_USER_KEY=/etc/grid-security/userkey.pem
@@ -35,7 +40,7 @@ services:
       - POSTGRES_PASSWORD=secret
     ports:
       - "5432:5432"
-    command: ["-c", "fsync=off","-c", "synchronous_commit=off","-c", "full_page_writes=off", "-c","max_connections=1000"]
+    command: ["-c", "fsync=off","-c", "synchronous_commit=off","-c", "full_page_writes=off", "-c","max_connections=10000"]
   graphite:
     image: graphiteapp/graphite-statsd
     ports:
@@ -124,7 +129,12 @@ services:
     restart: always
     ports:
       - "1096:1096"
+    volumes:
+      - /etc/grid-security/certificates:/etc/grid-security/certificates
+      - ./Server-files/user-host-certs/usercert.pem:/etc/grid-security/usercert.pem
+      - ./Server-files/user-host-certs/userkey.pem:/etc/grid-security/usercert.key
+      - ./Server-files/user-host-certs/rucio02_pic_es_interm.cer:/etc/grid-security/rucio02_pic_es_interm.cer
     environment:
-      - X509_USER_CERT=/opt/rucio/etc/usercert.pem
-      - X509_USER_KEY=/opt/rucio/etc/userkey.pem
+      - X509_USER_CERT=/etc/grid-security/usercert.pem
+      - X509_USER_KEY=/etc/grid-security/usercert.key
     entrypoint: /usr/bin/yes

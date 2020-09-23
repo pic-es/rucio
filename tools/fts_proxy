@@ -17,13 +17,15 @@ x509proxy=/tmp/x509up_u0
 ftsdelegate=/bin/fts-rest-delegate
 ftsserver=https://fts01.pic.es:8446
 
+export PASSPHRASE=br4912862
+
 ## Logging info
 dtstamp="`date +%F-%A-%H.%M.%S `"
 echo -e "\n################ ${dtstamp} ################" >> ${ftsproxylog}
 
 ## Create robot proxy
 echo -e "${dtstamp}: ${proxytool} -cert ${hostcert} -key ${hostkey} -out ${x509proxy} -debug "
-${proxytool} -cert ${hostcert} -key ${hostkey} -out  ${x509proxy} -debug 2>> ${ftsproxylog} 2>&1
+echo $PASSPHRASE | ${proxytool} -cert ${hostcert} -key ${hostkey} -out  ${x509proxy} -pwstdin -debug 2>> ${ftsproxylog} 2>&1
 proxy_ret=$?
 echo -e "${dtstamp}: ${proxytool} return: ${proxy_ret}\n" >> ${ftsproxylog} 2>&1
 

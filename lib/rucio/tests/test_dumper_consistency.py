@@ -1,24 +1,31 @@
-'''
-  Copyright European Organization for Nuclear Research (CERN)
+# Copyright 2015-2020 CERN for the benefit of the ATLAS collaboration.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Authors:
+# - Fernando Lopez <fernando.e.lopez@gmail.com>, 2015
+# - Vincent Garonne <vincent.garonne@cern.ch>, 2017
+# - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2019
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  You may not use this file except in compliance with the License.
-  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-  Authors:
-  - Fernando Lopez, <felopez@cern.ch>, 2015
-  - Vincent Garonne, <vincent.garonne@cern.ch>, 2017
-'''
-import os
 import json
+import os
 import shutil
+import sys
 import tempfile
-
-import mock
+import unittest
 from datetime import datetime
 
-from nose.tools import eq_
-from nose.tools import ok_
 from six import PY3
 
 from rucio.common.dumper.consistency import Consistency
@@ -28,6 +35,11 @@ from rucio.common.dumper.consistency import gnu_sort
 from rucio.common.dumper.consistency import min3
 from rucio.common.dumper.consistency import parse_and_filter_file
 from rucio.tests.common import make_temp_file
+
+if sys.version_info >= (3, 3):
+    from unittest import mock
+else:
+    import mock
 
 
 def mocked_requests(*args, **kwargs):
@@ -55,7 +67,7 @@ def mocked_requests(*args, **kwargs):
         return MockResponse([rucio_dump_2], 200)
 
 
-class TestConsistency(object):
+class TestConsistency(unittest.TestCase):
     '''
     TestConsistency
     '''
@@ -83,7 +95,6 @@ class TestConsistency(object):
     ]
 
     def setUp(self):  # pylint: disable=invalid-name
-        ''' SetUp '''
         self.tmp_dir = tempfile.mkdtemp()
         self.fake_agis_data = [{
             'name': 'MOCK_SCRATCHDISK',
@@ -91,8 +102,7 @@ class TestConsistency(object):
             'endpoint': '/pnfs/example.com/atlas/atlasdatadisk/'
         }]
 
-    def teardown(self):  # pylint: disable=invalid-name
-        ''' teardown '''
+    def tearDown(self):  # pylint: disable=invalid-name
         shutil.rmtree(self.tmp_dir)
 
     @mock.patch('rucio.common.dumper.agis_endpoints_data')
@@ -114,7 +124,7 @@ class TestConsistency(object):
             next_date_fname=rrdf2,
             cache_dir=self.tmp_dir,
         )
-        eq_(len(list(consistency)), 0)
+        assert len(list(consistency)) == 0
 
     @mock.patch('rucio.common.dumper.agis_endpoints_data')
     def test_consistency_manual_lost_file(self, mock_get):
@@ -138,9 +148,9 @@ class TestConsistency(object):
             cache_dir=self.tmp_dir,
         )
         consistency = list(consistency)
-        eq_(len(consistency), 1)
-        eq_(consistency[0].apparent_status, 'LOST')
-        eq_(consistency[0].path, 'user/someuser/aa/bb/user.someuser.filename2')
+        assert len(consistency) == 1
+        assert consistency[0].apparent_status == 'LOST'
+        assert consistency[0].path == 'user/someuser/aa/bb/user.someuser.filename2'
 
     @mock.patch('rucio.common.dumper.agis_endpoints_data')
     def test_consistency_manual_transient_file_is_not_lost(self, mock_get):
@@ -164,7 +174,7 @@ class TestConsistency(object):
             next_date_fname=rrdf2,
             cache_dir=self.tmp_dir,
         )
-        eq_(len(list(consistency)), 0)
+        assert len(list(consistency)) == 0
 
     @mock.patch('rucio.common.dumper.agis_endpoints_data')
     def test_consistency_manual_dark_file(self, mock_get):
@@ -189,9 +199,9 @@ class TestConsistency(object):
         )
         consistency = list(consistency)
 
-        eq_(len(consistency), 1)
-        eq_(consistency[0].apparent_status, 'DARK')
-        eq_(consistency[0].path, 'user/someuser/aa/bb/user.someuser.filename2')
+        assert len(consistency) == 1
+        assert consistency[0].apparent_status == 'DARK'
+        assert consistency[0].path == 'user/someuser/aa/bb/user.someuser.filename2'
 
     @mock.patch('rucio.common.dumper.agis_endpoints_data')
     def test_consistency_manual_multiple_slashes_in_storage_dump_do_not_generate_false_positive(self, mock_get):
@@ -215,7 +225,7 @@ class TestConsistency(object):
         )
         consistency = list(consistency)
 
-        eq_(len(consistency), 0, [e.csv() for e in consistency])
+        assert len(consistency) == 0
 
     @mock.patch('requests.Session.head', side_effect=mocked_requests)
     @mock.patch('requests.Session.get', side_effect=mocked_requests)
@@ -242,22 +252,22 @@ class TestConsistency(object):
                                        cache_dir=self.tmp_dir)
         consistency = list(consistency)
 
-        eq_(len(consistency), 2)
+        assert len(consistency) == 2
         dark = next(
             entry.path for entry in consistency if entry.apparent_status == 'DARK'
         )
         lost = next(
             entry.path for entry in consistency if entry.apparent_status == 'LOST'
         )
-        ok_('user.someuser.dark' in dark)
-        ok_('user.someuser.lost' in lost)
+        assert 'user.someuser.dark' in dark
+        assert 'user.someuser.lost' in lost
 
     def test__try_to_advance(self):
         ''' DUMPER '''
         i = iter(['   abc  '])
-        eq_(_try_to_advance(i), 'abc')
-        eq_(_try_to_advance(i), None)
-        eq_(_try_to_advance(i, 42), 42)
+        assert _try_to_advance(i) == 'abc'
+        assert _try_to_advance(i) is None
+        assert _try_to_advance(i, 42) == 42
 
     def test_compare3(self):
         ''' DUMPER '''
@@ -265,55 +275,50 @@ class TestConsistency(object):
         sorted_rdd_2 = sorted(self.case_mixed_rrd_2, key=lambda s: s.split(',')[0])
         sorted_sed = sorted(self.case_mixed_sed)
 
-        comp = list(compare3(sorted_rdd_1, sorted_sed, sorted_rdd_2))
-
-        eq_(
-            sorted(comp),
-            sorted([
-                ('path1', (True, True, True), ('A', 'A')),
-                ('path20', (True, True, True), ('U', 'A')),
-                ('path01', (True, False, True), ('U', 'U')),
-                ('path23', (True, False, False), ('U', None)),
-                ('path26', (True, False, True), ('A', 'A')),
-                ('path6', (True, False, True), ('A', 'A')),
-                ('path66', (False, True, False), (None, None)),
-                ('path46', (False, True, False), (None, None)),
-                ('pathsda', (False, True, False), (None, None)),
-            ]),
-        )
+        value = sorted(list(compare3(sorted_rdd_1, sorted_sed, sorted_rdd_2)))
+        expected = sorted([
+            ('path1', (True, True, True), ('A', 'A')),
+            ('path20', (True, True, True), ('U', 'A')),
+            ('path01', (True, False, True), ('U', 'U')),
+            ('path23', (True, False, False), ('U', None)),
+            ('path26', (True, False, True), ('A', 'A')),
+            ('path6', (True, False, True), ('A', 'A')),
+            ('path66', (False, True, False), (None, None)),
+            ('path46', (False, True, False), (None, None)),
+            ('pathsda', (False, True, False), (None, None)),
+        ])
+        assert value == expected
 
     def test_compare3_file_name_with_comma_in_storage_dump_ATLDDMOPS_4105(self):
         ''' DUMPER '''
         rucio_replica_dump = 'user/mfauccig/8d/46/user.mfauccig.410000.PowhegPythiaEvtGen.DAOD_TOPQ1.e3698_s2608_s2183_r6630_r6264_p2377.v1.log.6466214.000001.log.tgz,A'
         storage_dump = 'user/mdobre/01/6b/user.mdobre.C1C1bkg.WWVBH,nometcut.0711.log.4374089.000029.log.tgz'
-        results = list(compare3([rucio_replica_dump], [storage_dump], [rucio_replica_dump]))
-        eq_(
-            results,
-            [
-                (
-                    'user/mdobre/01/6b/user.mdobre.C1C1bkg.WWVBH,nometcut.0711.log.4374089.000029.log.tgz',
-                    (False, True, False),
-                    (None, None),
-                ),
-                (
-                    'user/mfauccig/8d/46/user.mfauccig.410000.PowhegPythiaEvtGen.DAOD_TOPQ1.e3698_s2608_s2183_r6630_r6264_p2377.v1.log.6466214.000001.log.tgz',
-                    (True, False, True),
-                    ('A', 'A'),
-                ),
-            ],
-        )
+        value = list(compare3([rucio_replica_dump], [storage_dump], [rucio_replica_dump]))
+        expected = [
+            (
+                'user/mdobre/01/6b/user.mdobre.C1C1bkg.WWVBH,nometcut.0711.log.4374089.000029.log.tgz',
+                (False, True, False),
+                (None, None),
+            ),
+            (
+                'user/mfauccig/8d/46/user.mfauccig.410000.PowhegPythiaEvtGen.DAOD_TOPQ1.e3698_s2608_s2183_r6630_r6264_p2377.v1.log.6466214.000001.log.tgz',
+                (True, False, True),
+                ('A', 'A'),
+            ),
+        ]
+        assert value == expected
 
     def test_min3_simple_strings(self):
         ''' DUMPER '''
-        eq_(min3('a', 'b', 'c'), 'a')
+        assert min3('a', 'b', 'c') == 'a'
 
     def test_min3_repeated_strings(self):
         ''' DUMPER '''
-        eq_(min3('b', 'a', 'a'), 'a')
+        assert min3('b', 'a', 'a') == 'a'
 
     def test_min3_parsing_the_strings_is_not_a_responsability_of_this_function(self):
         ''' DUMPER '''
-        eq_(min3('a,b', 'cab', 'b,a'), 'a,b')
+        assert min3('a,b', 'cab', 'b,a') == 'a,b'
 
     def test_parse_and_filter_file_default_parameters(self):
         ''' DUMPER '''
@@ -324,7 +329,7 @@ class TestConsistency(object):
         with open(parsed_file) as f:
             data = f.read()
 
-        eq_(fake_data.replace('\n', '\n\n'), data)
+        assert fake_data.replace('\n', '\n\n') == data
 
         os.unlink(path)
         os.unlink(parsed_file)
@@ -337,7 +342,7 @@ class TestConsistency(object):
         parsed_file = parse_and_filter_file(path, parser=str.strip, cache_dir=self.tmp_dir)
         with open(parsed_file) as f:
             data = f.read()
-        eq_(fake_data, data)
+        assert fake_data == data
 
         os.unlink(path)
         os.unlink(parsed_file)
@@ -351,7 +356,7 @@ class TestConsistency(object):
         with open(parsed_file) as f:
             data = f.read()
 
-        eq_('asd\n\n', data)
+        assert 'asd\n\n' == data
 
         os.unlink(path)
         os.unlink(parsed_file)
@@ -362,7 +367,7 @@ class TestConsistency(object):
 
         parsed_file = parse_and_filter_file(path, cache_dir=self.tmp_dir)
 
-        eq_(parsed_file, os.path.join(self.tmp_dir, os.path.basename(path) + '_parsed'))
+        assert parsed_file == os.path.join(self.tmp_dir, os.path.basename(path) + '_parsed')
 
         os.unlink(path)
         os.unlink(parsed_file)
@@ -373,7 +378,7 @@ class TestConsistency(object):
 
         parsed_file = parse_and_filter_file(path, prefix=path + 'X', cache_dir=self.tmp_dir)
 
-        eq_(parsed_file, path + 'X_parsed')
+        assert parsed_file == path + 'X_parsed'
 
         os.unlink(path)
         os.unlink(parsed_file)
@@ -384,7 +389,7 @@ class TestConsistency(object):
 
         parsed_file = parse_and_filter_file(path, prefix=path + 'X', postfix='Y', cache_dir=self.tmp_dir)
 
-        eq_(parsed_file, path + 'X_Y')
+        assert parsed_file == path + 'X_Y'
 
         os.unlink(path)
         os.unlink(parsed_file)
@@ -398,34 +403,24 @@ class TestConsistency(object):
         path = make_temp_file(self.tmp_dir, unsorted_data)
         sorted_file = gnu_sort(path, cache_dir=self.tmp_dir)
 
+        assertion_msg = ('GNU Sort must sort comparing byte by byte (export '
+                         'LC_ALL=C) to be faster and consistent with Python 2.')
         if PY3:
             with open(sorted_file, encoding='utf-8') as f:
-                eq_(
-                    f.read(),
-                    sorted_data,
-                    'GNU Sort must sort comparing byte by byte (export '
-                    'LC_ALL=C) to be faster and consistent with Python 2.'
-                )
+                assert f.read() == sorted_data, assertion_msg
         else:
             with open(sorted_file) as f:
-                eq_(
-                    f.read(),
-                    sorted_data,
-                    'GNU Sort must sort comparing byte by byte (export '
-                    'LC_ALL=C) to be faster and consistent with Python 2.'
-                )
+                assert f.read() == sorted_data, assertion_msg
 
         os.unlink(path)
         os.unlink(sorted_file)
 
         python_sort = ''.join(sorted(unsorted_data_list))
-        eq_(
-            python_sort,
-            sorted_data,
-            'Current Python interpreter must sort strings comparing byte by '
-            'byte, it is important to use the same ordering as the one used '
-            'with GNU Sort. Note Python 3 uses unicode by default.'
-        )
+        assertion_msg = ('Current Python interpreter must sort strings '
+                         'comparing byte by byte, it is important to use the '
+                         'same ordering as the one used with GNU Sort. Note '
+                         'Python 3 uses unicode by default.')
+        assert python_sort == sorted_data, assertion_msg
 
     def test_gnu_sort_can_sort_by_field(self):
         ''' DUMPER '''
@@ -437,10 +432,10 @@ class TestConsistency(object):
 
         if PY3:
             with open(sorted_file, encoding='utf-8') as f:
-                eq_(f.read(), sorted_data)
+                assert f.read() == sorted_data
         else:
             with open(sorted_file) as f:
-                eq_(f.read(), sorted_data)
+                assert f.read() == sorted_data
 
         os.unlink(path)
         os.unlink(sorted_file)

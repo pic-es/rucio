@@ -59,7 +59,7 @@ rm -rf /tmp/rucio_rse/*
 echo 'Removing old SQLite databases'
 rm -f /tmp/rucio.db
 
-tools/docker_activate_rses.sh
+#tools/docker_activate_rses.sh
 
 if test ${special}; then
     if [ -f /opt/rucio/etc/rucio.cfg ]; then
@@ -102,7 +102,8 @@ if [ $? != 0 ]; then
 fi
 
 echo 'Bootstrap tests: Create accounts/mock scope'
-tools/fts_proxy
+#tools/fts_proxy
+tools/cred_proxy
 tools/bootstrap_tests.py
 if [ $? != 0 ]; then
     echo 'Failed to bootstrap!'
@@ -111,9 +112,11 @@ fi
 
 if test ${activate_rse}; then
     echo 'Activating default RSEs (XRD1, XRD2, XRD3)'
+    tools/renew_proxy.sh & 
+    kill $(ps aux | grep 'memcached' | awk '{print $2}')
+    mv /usr/bin/memcached /usr/bin/memcached.bkp
     tools/docker_activate_rses.sh
     systemctl disable memcached
-    mv /usr/bin/memcached /usr/bin/memcached.bkp
     supervisord -c /etc/supervisord.conf --nodaemon &
 fi
 

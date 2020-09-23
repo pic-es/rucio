@@ -1,0 +1,71 @@
+FROM centos:7
+RUN echo "Building client"
+
+# Required repos
+ADD "http://dmc-repo.web.cern.ch/dmc-repo/dmc-ci-el7.repo" "/etc/yum.repos.d/"
+ADD "http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo" "/etc/yum.repos.d/"
+
+RUN yum install -y epel-release.noarch
+RUN yum upgrade -y
+RUN yum install -y root nano git tree make httpd python3 python3-mod_wsgi libaio gcc python36-devel.x86_64 mod_ssl openssl-devel.x86_64 python3-m2crypto libnsl.x86_64 cronie ruby
+
+# Add voms dependencies 
+RUN yum install -y globus-proxy-utils voms-clients-cpp voms-clients-java
+
+# Add gfal dependencies 
+RUN yum install -y gfal2-all gfal2-util gfal2-python gfal2-plugin-file gfal2-plugin-gridftp gfal2-plugin-http gfal2-plugin-srm gfal2-plugin-xrootd gfal2 
+
+RUN yum install -y gfal*
+
+RUN rpm -i /tmp/oic.rpm; \
+    echo "/usr/lib/oracle/12.2/client64/lib" >/etc/ld.so.conf.d/oracle.conf; \
+    ldconfig
+
+RUN python3 -m pip install --upgrade pip setuptools
+# RUN rm -rf /usr/lib/python3.6/site-packages/ipaddress*
+RUN python3 -m pip install rucio-clients
+
+RUN python3 -m pip --no-cache-dir install j2cli psycopg2-binary
+RUN python3 -m pip --no-cache-dir install cx_oracle==6.3.1 PyMySQL
+RUN python3 -m pip --no-cache-dir install numpy
+RUN python3 -m pip --no-cache-dir install pytz
+RUN python3 -m pip --no-cache-dir install graphyte
+
+# To generate the configuration and enable bash completion for the rucio clients
+
+ENV PATH $PATH:/opt/rucio/etc
+ADD bashrc /root/.bashrc
+
+# Add scripts  
+ADD /Other-certs/test-mario.py /
+ADD /Other-certs/test-upload-mario.py /
+ADD /Other-certs/test-create-files-mario.py /
+ADD /Other-certs/test-create-rules-mario.py / 
+ADD /Other-certs/lfn2pfn.py / 
+ADD /Other-certs/MAGIC_dataset.txt /
+ADD /Other-certs/rucio.cfg /opt/rucio/etc/rucio.cfg
+
+# Add certificates
+RUN mkdir /.globus
+RUN mkdir -p /etc/grid-security/certificates/
+ADD /Server-files/certs/* /etc/grid-security/certificates/
+
+ADD /Other-certs/rucio_ca.pem /opt/rucio/etc/
+ADD /Other-certs/mariouser.pem /opt/rucio/etc/
+ADD /Other-certs/mariouser.key.pem /opt/rucio/etc/
+
+RUN ls -l /opt/rucio/etc/
+RUN chmod 644 /opt/rucio/etc/mariouser.pem
+RUN chmod 400 /opt/rucio/etc/mariouser.key.pem
+
+RUN voms-proxy-init -cert /opt/rucio/etc/mariouser.pem -key /opt/rucio/etc/mariouser.key.pem -valid 3000:00
+RUN grid-proxy-init -cert /opt/rucio/etc/mariouser.pem -key /opt/rucio/etc/mariouser.key.pem -valid 3000:00
+
+ADD 5fca1cb1.0 /etc/grid-security/certificates/
+
+RUN chmod +x /*.py
+
+RUN yum clean all && \
+    rm -rf /var/cache/yum
+
+CMD ["/usr/sbin/init", "/bin/bash", "./entrypoint.sh"]

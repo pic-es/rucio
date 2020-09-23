@@ -1,4 +1,5 @@
-# Copyright 2012-2018 CERN for the benefit of the ATLAS collaboration.
+# -*- coding: utf-8 -*-
+# Copyright 2012-2020 CERN for the benefit of the ATLAS collaboration.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,31 +15,31 @@
 #
 # Authors:
 # - Cedric Serfon <cedric.serfon@cern.ch>, 2012-2014
-# - Vincent Garonne <vgaronne@gmail.com>, 2012-2018
+# - Vincent Garonne <vincent.garonne@cern.ch>, 2012-2018
 # - Ralph Vigne <ralph.vigne@cern.ch>, 2013
 # - Mario Lassnig <mario.lassnig@cern.ch>, 2017
-# - Joaquin Bogado <jbogado@linti.unlp.edu.ar>, 2018
+# - Joaquín Bogado <jbogado@linti.unlp.edu.ar>, 2018
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
 
 from __future__ import print_function
-
-"""
-Test the WebDAV protocol
-"""
 
 import json
 import os
 import tempfile
+import unittest
 
+import pytest
 import requests
-from nose.tools import raises
 
 from rucio.common import exception
-from rucio.rse import rsemanager
-from rucio.tests.rsemgr_api_test import MgrTestCases
 from rucio.common.exception import FileReplicaAlreadyExists
+from rucio.rse import rsemanager
+from rucio.tests.common import skip_rse_tests_with_accounts
+from rucio.tests.rsemgr_api_test import MgrTestCases
 
 
-class TestRseWebDAV(object):
+@skip_rse_tests_with_accounts
+class TestRseWebDAV(unittest.TestCase):
     """
     Test the WebDAV protocol
     """
@@ -46,10 +47,10 @@ class TestRseWebDAV(object):
     tmpdir = None
     user = None
 
-    # The setupClass and tearDownClass need some fixing, but can be ignored for this patch
+    # The setUpClass and tearDownClass need some fixing, but can be ignored for this patch
 
     @classmethod
-    def setupClass(cls):
+    def setUpClass(cls):
         """WebDAV (RSE/PROTOCOLS): Creating necessary directories and files """
         session = requests.Session()
         session.cert = os.getenv('X509_USER_PROXY')
@@ -67,7 +68,7 @@ class TestRseWebDAV(object):
 
         with open("%s/data.raw" % cls.tmpdir, "wb") as out:
             out.seek((1024) - 1)  # 1 kB
-            out.write('\0')
+            out.write(b'\0')
         for f in MgrTestCases.files_local:
             os.symlink('%s/data.raw' % cls.tmpdir, '%s/%s' % (cls.tmpdir, f))
 
@@ -104,7 +105,7 @@ class TestRseWebDAV(object):
         status2 = storage.delete('%s://%s:%s%sgroup/%s' % (scheme, hostname, port, prefix, cls.user))
         print(status2)
 
-    def setup(self):
+    def setUp(self):
         """WebDAV (RSE/PROTOCOLS): Creating Mgr-instance """
         self.tmpdir = TestRseWebDAV.tmpdir
         self.rse_id = 'FZK-LCG2_SCRATCHDISK'
@@ -123,20 +124,20 @@ class TestRseWebDAV(object):
         """WebDAV (RSE/PROTOCOLS): Get a single file from storage providing PFN (Success)"""
         self.mtc.test_get_mgr_ok_single_pfn()
 
-    @raises(exception.SourceNotFound)
     def test_get_mgr_SourceNotFound_multi(self):
         """WebDAV (RSE/PROTOCOLS): Get multiple files from storage providing LFNs and PFNs (SourceNotFound)"""
-        self.mtc.test_get_mgr_SourceNotFound_multi()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_get_mgr_SourceNotFound_multi()
 
-    @raises(exception.SourceNotFound)
     def test_get_mgr_SourceNotFound_single_lfn(self):
         """WebDAV (RSE/PROTOCOLS): Get a single file from storage providing LFN (SourceNotFound)"""
-        self.mtc.test_get_mgr_SourceNotFound_single_lfn()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_get_mgr_SourceNotFound_single_lfn()
 
-    @raises(exception.SourceNotFound)
     def test_get_mgr_SourceNotFound_single_pfn(self):
         """WebDAV (RSE/PROTOCOLS): Get a single file from storage providing PFN (SourceNotFound)"""
-        self.mtc.test_get_mgr_SourceNotFound_single_pfn()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_get_mgr_SourceNotFound_single_pfn()
 
     # Mgr-Tests: PUT
     def test_put_mgr_ok_multi(self):
@@ -147,25 +148,25 @@ class TestRseWebDAV(object):
         """WebDAV (RSE/PROTOCOLS): Put a single file to storage (Success)"""
         self.mtc.test_put_mgr_ok_single()
 
-    @raises(exception.SourceNotFound)
     def test_put_mgr_SourceNotFound_multi(self):
         """WebDAV (RSE/PROTOCOLS): Put multiple files to storage (SourceNotFound)"""
-        self.mtc.test_put_mgr_SourceNotFound_multi()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_put_mgr_SourceNotFound_multi()
 
-    @raises(exception.SourceNotFound)
     def test_put_mgr_SourceNotFound_single(self):
         """WebDAV (RSE/PROTOCOLS): Put a single file to storage (SourceNotFound)"""
-        self.mtc.test_put_mgr_SourceNotFound_single()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_put_mgr_SourceNotFound_single()
 
-    @raises(exception.FileReplicaAlreadyExists)
     def test_put_mgr_FileReplicaAlreadyExists_multi(self):
         """WebDAV (RSE/PROTOCOLS): Put multiple files to storage (FileReplicaAlreadyExists)"""
-        self.mtc.test_put_mgr_FileReplicaAlreadyExists_multi()
+        with pytest.raises(exception.FileReplicaAlreadyExists):
+            self.mtc.test_put_mgr_FileReplicaAlreadyExists_multi()
 
-    @raises(exception.FileReplicaAlreadyExists)
     def test_put_mgr_FileReplicaAlreadyExists_single(self):
         """WebDAV (RSE/PROTOCOLS): Put a single file to storage (FileReplicaAlreadyExists)"""
-        self.mtc.test_put_mgr_FileReplicaAlreadyExists_single()
+        with pytest.raises(exception.FileReplicaAlreadyExists):
+            self.mtc.test_put_mgr_FileReplicaAlreadyExists_single()
 
     # MGR-Tests: DELETE
     def test_delete_mgr_ok_multi(self):
@@ -176,15 +177,15 @@ class TestRseWebDAV(object):
         """WebDAV (RSE/PROTOCOLS): Delete a single file from storage (Success)"""
         self.mtc.test_delete_mgr_ok_single()
 
-    @raises(exception.SourceNotFound)
     def test_delete_mgr_SourceNotFound_multi(self):
         """WebDAV (RSE/PROTOCOLS): Delete multiple files from storage (SourceNotFound)"""
-        self.mtc.test_delete_mgr_SourceNotFound_multi()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_delete_mgr_SourceNotFound_multi()
 
-    @raises(exception.SourceNotFound)
     def test_delete_mgr_SourceNotFound_single(self):
         """WebDAV (RSE/PROTOCOLS): Delete a single file from storage (SourceNotFound)"""
-        self.mtc.test_delete_mgr_SourceNotFound_single()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_delete_mgr_SourceNotFound_single()
 
     # MGR-Tests: EXISTS
     def test_exists_mgr_ok_multi(self):
@@ -224,35 +225,35 @@ class TestRseWebDAV(object):
         """WebDAV (RSE/PROTOCOLS): Rename a single file on storage using PFN (Success)"""
         self.mtc.test_rename_mgr_ok_single_pfn()
 
-    @raises(exception.FileReplicaAlreadyExists)
     def test_rename_mgr_FileReplicaAlreadyExists_multi(self):
         """WebDAV (RSE/PROTOCOLS): Rename multiple files on storage (FileReplicaAlreadyExists)"""
-        self.mtc.test_rename_mgr_FileReplicaAlreadyExists_multi()
+        with pytest.raises(exception.FileReplicaAlreadyExists):
+            self.mtc.test_rename_mgr_FileReplicaAlreadyExists_multi()
 
-    @raises(exception.FileReplicaAlreadyExists)
     def test_rename_mgr_FileReplicaAlreadyExists_single_lfn(self):
         """WebDAV (RSE/PROTOCOLS): Rename a single file on storage using LFN (FileReplicaAlreadyExists)"""
-        self.mtc.test_rename_mgr_FileReplicaAlreadyExists_single_lfn()
+        with pytest.raises(exception.FileReplicaAlreadyExists):
+            self.mtc.test_rename_mgr_FileReplicaAlreadyExists_single_lfn()
 
-    @raises(exception.FileReplicaAlreadyExists)
     def test_rename_mgr_FileReplicaAlreadyExists_single_pfn(self):
         """WebDAV (RSE/PROTOCOLS): Rename a single file on storage using PFN (FileReplicaAlreadyExists)"""
-        self.mtc.test_rename_mgr_FileReplicaAlreadyExists_single_pfn()
+        with pytest.raises(exception.FileReplicaAlreadyExists):
+            self.mtc.test_rename_mgr_FileReplicaAlreadyExists_single_pfn()
 
-    @raises(exception.SourceNotFound)
     def test_rename_mgr_SourceNotFound_multi(self):
         """WebDAV (RSE/PROTOCOLS): Rename multiple files on storage (SourceNotFound)"""
-        self.mtc.test_rename_mgr_SourceNotFound_multi()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_rename_mgr_SourceNotFound_multi()
 
-    @raises(exception.SourceNotFound)
     def test_rename_mgr_SourceNotFound_single_lfn(self):
         """WebDAV (RSE/PROTOCOLS): Rename a single file on storage using LFN (SourceNotFound)"""
-        self.mtc.test_rename_mgr_SourceNotFound_single_lfn()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_rename_mgr_SourceNotFound_single_lfn()
 
-    @raises(exception.SourceNotFound)
     def test_rename_mgr_SourceNotFound_single_pfn(self):
         """WebDAV (RSE/PROTOCOLS): Rename a single file on storage using PFN (SourceNotFound)"""
-        self.mtc.test_rename_mgr_SourceNotFound_single_pfn()
+        with pytest.raises(exception.SourceNotFound):
+            self.mtc.test_rename_mgr_SourceNotFound_single_pfn()
 
     def test_change_scope_mgr_ok_single_lfn(self):
         """WebDAV (RSE/PROTOCOLS): Change the scope of a single file on storage using LFN (Success)"""

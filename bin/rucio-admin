@@ -30,6 +30,8 @@
 # - Dimitrios Christidis, <dimitrios.christidis@cern.ch>, 2019-2020
 # - Ruturaj Gujar, <ruturaj.gujar23@gmail.com>, 2019
 # - Jaroslav Guenther <jaroslav.guenther@gmail.com>, 2019-2020
+# - Patrick Austin <patrick.austin@stfc.ac.uk>, 2020
+# - Rob Barnsley <R.Barnsley@skatelescope.org>, 2020
 #
 # PY3K COMPATIBLE
 
@@ -63,7 +65,7 @@ from rucio.common.exception import (AccountNotFound, DataIdentifierAlreadyExists
                                     DataIdentifierNotFound, InvalidObject, ReplicaNotFound,
                                     RSENotFound, RSEOperationNotSupported, InvalidRSEExpression,
                                     DuplicateContent, RuleNotFound, CannotAuthenticate,
-                                    Duplicate, ReplicaIsLocked, ConfigNotFound)
+                                    Duplicate, ReplicaIsLocked, ConfigNotFound, ScopeNotFound)
 from rucio.common.utils import chunks, construct_surl, sizefmt, get_bytes_value_from_string, render_json, parse_response, extract_scope
 from rucio import version
 from rucio.rse import rsemanager as rsemgr
@@ -189,6 +191,10 @@ def exception_handler(function):
             logger.error(error)
             logger.error('This means that the configuration section you are looking for does not exist.')
             return FAILURE
+        except ScopeNotFound as error:
+            logger.error(error)
+            logger.error('This means that no scopes were found for the specified account ID.')
+            return FAILURE
         except Exception as error:
             logger.error(error)
             logger.error('Rucio exited with an unexpected/unknown error, please provide the traceback below to the developers.')
@@ -233,7 +239,7 @@ def get_client(args):
         client = Client(rucio_host=args.host, auth_host=args.auth_host,
                         account=args.issuer,
                         auth_type=auth_type, creds=creds,
-                        ca_cert=args.ca_certificate, timeout=args.timeout)
+                        ca_cert=args.ca_certificate, timeout=args.timeout, vo=args.vo)
     except CannotAuthenticate as error:
         logger.error(error)
         if 'alert certificate expired' in str(error):
@@ -244,20 +250,15 @@ def get_client(args):
     return client
 
 
-def extract_scope_old(did):
-    # Try to extract the scope from the DSN
-    if did.find(':') > -1:
-        scope, name = did.split(':')[0], did.split(':')[1]
-        if name.endswith('/'):
-            name = name[:-1]
+def get_scope(did, client):
+    try:
+        scope, name = extract_scope(did)
         return scope, name
-    else:
-        scope = did.split('.')[0]
-        if did.startswith('user') or did.startswith('group'):
-            scope = ".".join(did.split('.')[0:2])
-        if did.endswith('/'):
-            did = did[:-1]
-        return scope, did
+    except TypeError:
+        scopes = client.list_scopes()
+        scope, name = extract_scope(did, scopes)
+        return scope, name
+    return None, did
 
 
 @exception_handler
@@ -560,13 +561,13 @@ def info_rse(args):
         print('  ' + attribute + ': ' + str(attributes[attribute]))
     print('Protocols:')
     print('==========')
-    for protocol in sorted(rseinfo['protocols']):
+    for protocol in sorted(rseinfo['protocols'], key=lambda x: x['scheme']):
         print('  ' + protocol['scheme'])
         for item in sorted(protocol):
             print('    ' + item + ': ' + str(protocol[item]))
     print('Usage:')
     print('======')
-    for elem in sorted(usage):
+    for elem in sorted(usage, key=lambda x: x['source']):
         print('  ' + elem['source'])
         for item in sorted(elem):
             print('    ' + item + ': ' + str(elem[item]))
@@ -923,7 +924,7 @@ def reevaluate_did_for_subscription(args):
     """
     client = get_client(args)
     for did in args.dids.split(','):
-        scope, name = extract_scope(did)
+        scope, name = get_scope(did, client)
         client.set_metadata(scope, name, 'is_new', True)
     return SUCCESS
 
@@ -995,7 +996,7 @@ def declare_bad_file_replicas(args):
     bad_files_pfns = []
     for bad_file in bad_files:
         if bad_file.find('://') == -1:
-            scope, name = extract_scope(bad_file)
+            scope, name = get_scope(bad_file, client)
             did_info = client.get_did(scope, name)
             if did_info['type'].upper() != 'FILE' and not args.allow_collection:
                 print('DID %s:%s is a collection and --allow-collection was not specified.' % (scope, name))
@@ -1080,13 +1081,13 @@ def list_pfns(args):
     rse = args.rse
     protocol = args.protocol
     for input_did in dids:
-        scope, name = extract_scope(input_did)
+        scope, name = get_scope(input_did, client)
         replicas = [rep for rep in client.list_replicas([{'scope': scope, 'name': name}, ], schemes=[protocol, ])]
         if rse in replicas[0]['rses'] and replicas[0]['rses'][rse]:
             print(replicas[0]['rses'][rse][0])
         else:
             logger.warning('The file has no replica on the specified RSE')
-            rse_info = rsemgr.get_rse_info(rse)
+            rse_info = rsemgr.get_rse_info(rse, vo=client.vo)
             proto = rsemgr.create_protocol(rse_info, 'read', scheme=protocol)
             try:
                 pfn = proto.lfns2pfns(lfns={'scope': scope, 'name': name})
@@ -1210,6 +1211,7 @@ def get_parser():
     oparser.add_argument('-a', '--account', dest="issuer", metavar="ACCOUNT", help="Rucio account to use")
     oparser.add_argument('-S', '--auth-strategy', dest="auth_strategy", default=None, help="Authentication strategy (userpass, x509, ssh ...)")
     oparser.add_argument('-T', '--timeout', dest="timeout", type=float, default=None, help="Set all timeout values to SECONDS")
+    oparser.add_argument('--vo', dest="vo", metavar="VO", default=None, help="VO to authenticate at. Only used in multi-VO mode.")
 
     # Options for the userpass auth_strategy
     oparser.add_argument('-u', '--user', dest='username', default=None, help='username')
@@ -1398,9 +1400,9 @@ def get_parser():
                                                                          '::\n'
                                                                          '\n'
                                                                          '    $ rucio-admin account list-identities jdoe\n'
-                                                                         '    Identity: /C=DE/O=GermanGrid/OU=Desy/CN=Joe Doe,	type: X509\n'
-                                                                         '    Identity: jdoe@CERN.CH,	type: GSS\n'
-                                                                         '    Identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707654/CN=Joe Doe,	type: X509\n'
+                                                                         '    Identity: /C=DE/O=GermanGrid/OU=Desy/CN=Joe Doe, type: X509\n'
+                                                                         '    Identity: jdoe@CERN.CH,  type: GSS\n'
+                                                                         '    Identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707654/CN=Joe Doe, type: X509\n'
                                                                          '\n')
     list_account_identities_parser.set_defaults(which='list_identities')
     list_account_identities_parser.add_argument('account', action='store', help='Account name')
@@ -1522,7 +1524,7 @@ def get_parser():
                                                                '    Added new identity to account: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707658/CN=Joe Doe-jdoe\n'
                                                                '    \n'
                                                                '    $ rucio-admin account list-identities jdoe\n'
-                                                               '    Identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707658/CN=Joe Doe,	type: X509\n'
+                                                               '    Identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707658/CN=Joe Doe,   type: X509\n'
                                                                '\n'
                                                                'Note: please keep the DN inside quota marks.\n'
                                                                '\n'
@@ -1532,8 +1534,8 @@ def get_parser():
                                                                '    Added new identity to account: jdoe@CERN.CH-jdoe\n'
                                                                '    \n'
                                                                '    $ rucio-admin account list-identities jdoe\n'
-                                                               '    Identity: jdoe@CERN.CH,	type: GSS\n'
-                                                               '    Identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707658/CN=Joe Doe,	type: X509\n'
+                                                               '    Identity: jdoe@CERN.CH,    type: GSS\n'
+                                                               '    Identity: /DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jdoe/CN=707658/CN=Joe Doe,   type: X509\n'
                                                                '\n')
     identity_add_parser.set_defaults(which='identity_add')
     identity_add_parser.add_argument('--account', dest='account', action='store', help='Account name', required=True)
@@ -2205,7 +2207,7 @@ if __name__ == '__main__':
                 'list_pfns': list_pfns,
                 'import': import_data,
                 'export': export_data,
-                'set_tombstone': set_tombstone,
+                'set_tombstone': set_tombstone
                 }
 
     try:

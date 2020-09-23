@@ -1,4 +1,4 @@
-# Copyright 2014-2019 CERN for the benefit of the ATLAS collaboration.
+# Copyright 2014-2020 CERN for the benefit of the ATLAS collaboration.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,23 +13,31 @@
 # limitations under the License.
 #
 # Authors:
-# - Wen Guan <wguan.icedew@gmail.com>, 2014-2016
-# - Vincent Garonne <vgaronne@gmail.com>, 2014-2018
+# - Wen Guan <wen.guan@cern.ch>, 2014-2016
+# - Vincent Garonne <vincent.garonne@cern.ch>, 2014-2018
 # - Cedric Serfon <cedric.serfon@cern.ch>, 2014-2016
-# - Mario Lassnig <mario.lassnig@cern.ch>, 2016-2019
+# - Mario Lassnig <mario.lassnig@cern.ch>, 2016-2020
 # - Tobias Wegner <twegner@cern.ch>, 2017
 # - Nicolo Magini <Nicolo.Magini@cern.ch>, 2018-2019
 # - Joaquin Bogado <jbogado@linti.unlp.edu.ar>, 2018
-# - Frank Berghaus <frank.berghaus@cern.ch>, 2018
+# - Frank Berghaus <berghaus@cern.ch>, 2018
 # - Hannes Hansen <hannes.jakob.hansen@cern.ch>, 2019
+# - James Perry <j.perry@epcc.ed.ac.uk>, 2019
+# - Andrew Lister <andrew.lister@stfc.ac.uk>, 2019
 # - Gabriele Fronze' <gfronze@cern.ch>, 2019
+# - Jaroslav Guenther <jaroslav.guenther@cern.ch>, 2019
+# - Tomas Javurek <tomas.javurek@cern.ch>, 2020
+# - Martin Barisits <martin.barisits@cern.ch>, 2020
+# - Benedikt Ziemons <benedikt.ziemons@cern.ch>, 2020
 #
 # PY3K COMPATIBLE
 
 import errno
 import json
+import logging
 import os
 import re
+import subprocess
 try:
     # PY2
     import urlparse
@@ -62,6 +70,9 @@ class Default(protocol.RSEProtocol):
 
         :returns: Fully qualified PFN.
         """
+        lfns = [lfns] if type(lfns) == dict else lfns
+        # logging is commented out due to the log overload on server, TODO
+        # self.logger.debug('getting pfn for {} lfns'.format(len(list(lfns))))
 
         pfns = {}
         prefix = self.attributes['prefix']
@@ -78,8 +89,8 @@ class Default(protocol.RSEProtocol):
         hostname = self.attributes['hostname']
         if '://' in hostname:
             hostname = hostname.split("://")[1]
+        # self.logger.debug('hostname: {} prefix: {}'.format(hostname, prefix))
 
-        lfns = [lfns] if type(lfns) == dict else lfns
         if self.attributes['port'] == 0:
             for lfn in lfns:
                 scope, name = str(lfn['scope']), lfn['name']
@@ -95,6 +106,8 @@ class Default(protocol.RSEProtocol):
                     path = path[1:]
                 pfns['%s:%s' % (scope, name)] = ''.join([self.attributes['scheme'], '://', hostname, ':', str(self.attributes['port']), web_service_path, prefix, path])
 
+        # self.logger.debug('count of pfns: {}'.format(len(list(pfns))))
+
         return pfns
 
     def parse_pfns(self, pfns):
@@ -109,6 +122,7 @@ class Default(protocol.RSEProtocol):
         :raises RSEFileNameNotSupported: if the provided PFN doesn't match with the protocol settings
         """
 
+        self.logger.debug('count pfns {}'.format(len(list(pfns))))
         ret = dict()
         pfns = [pfns] if isinstance(pfns, STRING_TYPES) else pfns
         for pfn in pfns:
@@ -154,6 +168,7 @@ class Default(protocol.RSEProtocol):
 
         :returns: Fully qualified PFN.
         """
+        self.logger.debug('path {}'.format(path))
 
         if '://' in path:
             return path
@@ -182,6 +197,9 @@ class Default(protocol.RSEProtocol):
 
         :raises RSEAccessDenied
         """
+        self.logger.debug('connecting')
+
+        gfal2.set_verbose(gfal2.verbose_level.verbose)
 
         self.__ctx = gfal2.creat_context()  # pylint: disable=no-member
         self.__ctx.set_opt_string_list("SRM PLUGIN", "TURL_PROTOCOLS", ["gsiftp", "rfio", "gsidcap", "dcap", "kdcap"])
@@ -202,6 +220,7 @@ class Default(protocol.RSEProtocol):
         :raises ServiceUnavailable: if some generic error occured in the library.
         :raises SourceNotFound: if the source file was not found on the referred storage.
         """
+        self.logger.debug('path {}'.format(path))
 
         dest = os.path.abspath(dest)
         if ':' not in dest:
@@ -231,9 +250,9 @@ class Default(protocol.RSEProtocol):
         :raises ServiceUnavailable: if some generic error occured in the library.
         :raises SourceNotFound: if the source file was not found on the referred storage.
         """
+        self.logger.debug('source {} target {}'.format(source, target))
 
         source_url = '%s/%s' % (source_dir, source) if source_dir else source
-
         source_url = os.path.abspath(source_url)
         if not os.path.exists(source_url):
             raise exception.SourceNotFound()
@@ -264,6 +283,7 @@ class Default(protocol.RSEProtocol):
         :raises ServiceUnavailable: if some generic error occured in the library.
         :raises SourceNotFound: if the source file was not found on the referred storage.
         """
+        self.logger.debug('path {}'.format(path))
 
         pfns = [path] if isinstance(path, STRING_TYPES) else path
 
@@ -287,6 +307,7 @@ class Default(protocol.RSEProtocol):
         :raises ServiceUnavailable: if some generic error occured in the library.
         :raises SourceNotFound: if the source file was not found on the referred storage.
         """
+        self.logger.debug('path: {} new_path: {}'.format(path, new_path))
 
         try:
             status = self.__gfal2_rename(path, new_path)
@@ -309,13 +330,14 @@ class Default(protocol.RSEProtocol):
 
         :raises SourceNotFound: if the source file was not found on the referred storage.
         """
+        self.logger.debug('path {}'.format(path))
 
         try:
             status = self.__gfal2_exist(path)
             if status:
                 return False
             return True
-        except exception.SourceNotFound as error:
+        except exception.SourceNotFound:
             return False
         except Exception as error:
             raise exception.ServiceUnavailable(error)
@@ -324,7 +346,7 @@ class Default(protocol.RSEProtocol):
         """
         Closes the connection to RSE.
         """
-
+        self.logger.debug('closing protocol connection')
         del self.__ctx
         self.__ctx = None
 
@@ -338,6 +360,8 @@ class Default(protocol.RSEProtocol):
 
             :returns: a dict with two keys, filesize and an element of GLOBALLY_SUPPORTED_CHECKSUMS.
         """
+        self.logger.debug('path {}'.format(path))
+
         ret = {}
         ctx = self.__ctx
 
@@ -378,6 +402,7 @@ class Default(protocol.RSEProtocol):
         """
         Cancel all gfal operations in progress.
         """
+        self.logger.debug('cancelling gfal proc.')
 
         ctx = self.__ctx
         if ctx:
@@ -398,6 +423,7 @@ class Default(protocol.RSEProtocol):
         :raises SourceNotFound: if source file cannot be found.
         :raises RucioException: if it failed to copy the file.
         """
+        self.logger.debug('src: {} dest: {}'.format(src, dest))
 
         ctx = self.__ctx
         params = ctx.transfer_parameters()
@@ -445,6 +471,7 @@ class Default(protocol.RSEProtocol):
         :raises SourceNotFound: if the source file was not found.
         :raises RucioException: if it failed to remove the file.
         """
+        self.logger.debug('count: {}'.format(len(list(paths))))
 
         ctx = self.__ctx
 
@@ -469,6 +496,7 @@ class Default(protocol.RSEProtocol):
 
         :raises RucioException: if the error is not source not found.
         """
+        self.logger.debug('path {}'.format(path))
 
         ctx = self.__ctx
         try:
@@ -491,6 +519,7 @@ class Default(protocol.RSEProtocol):
 
         :raises RucioException: if failed.
         """
+        self.logger.debug('path: {} new_path: {}'.format(path, new_path))
 
         ctx = self.__ctx
 
@@ -517,6 +546,8 @@ class Default(protocol.RSEProtocol):
         :raises ServiceUnavailable: if some generic error occured in the library.
         """
         endpoint_basepath = self.path2pfn(self.attributes['prefix'])
+        self.logger.debug('endpoint_basepath {}'.format(endpoint_basepath))
+
         space_token = None
         if self.attributes['extended_attributes'] is not None and 'space_token' in list(self.attributes['extended_attributes'].keys()):
             space_token = self.attributes['extended_attributes']['space_token']
@@ -541,6 +572,7 @@ class Default(protocol.RSEProtocol):
 
         :raises ServiceUnavailable: if failed.
         """
+        self.logger.debug('path: {} space_token: {}'.format(path, space_token))
 
         ctx = self.__ctx
 
@@ -552,3 +584,108 @@ class Default(protocol.RSEProtocol):
             return totalsize, unusedsize
         except gfal2.GError as error:  # pylint: disable=no-member
             raise Exception(str(error))
+
+
+class NoRename(Default):
+
+    """ Do not rename files on upload/download. Necessary for some storage endpoints. """
+
+    def __init__(self, protocol_attr, rse_settings, logger=None):
+        """ Initializes the object with information about the referred RSE.
+
+            :param props Properties derived from the RSE Repository
+        """
+        super(NoRename, self).__init__(protocol_attr, rse_settings, logger=logger)
+        self.renaming = False
+        self.attributes.pop('determinism_type', None)
+        self.files = []
+
+    def rename(self, pfn, new_pfn):
+        """ Allows to rename a file stored inside the connected RSE.
+
+            :param pfn      Current physical file name
+            :param new_pfn  New physical file name
+
+            :raises DestinationNotAccessible, ServiceUnavailable, SourceNotFound
+        """
+        raise NotImplementedError
+
+
+class CLI(Default):
+
+    def __init__(self, protocol_attr, rse_settings, logger=None):
+        """ Initializes the object with information about the referred RSE.
+
+            :param props Properties derived from the RSE Repository
+        """
+
+        super(CLI, self).__init__(protocol_attr, rse_settings, logger=logger)
+        if not logger:
+            logger = logging.getLogger('%s.null' % __name__)
+        self.logger = logger
+
+    def get(self, path, dest, transfer_timeout=None):
+        """
+        Provides access to files stored inside connected the RSE.
+
+        :param path: Physical file name of requested file
+        :param dest: Name and path of the files when stored at the client
+        :param transfer_timeout: Transfer timeout (in seconds)
+
+        :raises RucioException: Passthrough of gfal-copy error message.
+        """
+
+        dest = os.path.abspath(dest)
+        if ':' not in dest:
+            dest = "file://" + dest
+
+        cmd = 'gfal-copy -vf -p -t %s -T %s %s %s' % (transfer_timeout, transfer_timeout, path, dest)
+        self.logger.debug('Command: ' + cmd)
+        cmd = cmd.split()
+
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+
+        if p.returncode:
+            self.logger.debug('Error STDOUT: ' + str(stdout))
+            self.logger.debug('Error STDERR: ' + str(stderr))
+            raise exception.RucioException(str(stderr))
+
+    def put(self, source, target, source_dir, transfer_timeout=None):
+        """
+        Allows to store files inside the referred RSE.
+
+        :param source: path to the source file on the client file system
+        :param target: path to the destination file on the storage
+        :param source_dir: Path where the to be transferred files are stored in the local file system
+        :param transfer_timeout: Transfer timeout (in seconds)
+
+        :raises RucioException: Passthrough of gfal-copy error message.
+        """
+
+        source_dir = source_dir or '.'
+        source_url = '%s/%s' % (source_dir, source)
+        self.logger.debug('source: ' + str(source_url))
+        source_url = os.path.abspath(source_url)
+        if not os.path.exists(source_url):
+            raise exception.SourceNotFound()
+        if ':' not in source_url:
+            source_url = "file://" + source_url
+
+        cmd = 'gfal-copy -vf -p -t %s -T %s %s %s ' % (transfer_timeout, transfer_timeout, source, target)
+
+        space_token = None
+        if self.attributes['extended_attributes'] is not None and 'space_token' in list(self.attributes['extended_attributes'].keys()):
+            space_token = self.attributes['extended_attributes']['space_token']
+            cmd = 'gfal-copy -vf -p -t %s -T %s -S %s %s %s ' % (transfer_timeout, transfer_timeout, space_token, source, target)
+
+        self.logger.debug('Command: ' + cmd)
+        cmd = cmd.split()
+
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+
+        if p.returncode:
+            self.logger.debug('Error STDOUT: ' + str(stdout))
+            self.logger.debug('Error STDERR: ' + str(stderr))
+            raise exception.RucioException(str(stderr))
