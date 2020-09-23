@@ -300,8 +300,8 @@ def send_to_graf(dictionary, myport=2013, myprotocol='udp') :
     for key in prepare_grafana(dictionary):
         if (key[0], key[1]) is not None : 
             print(key[0].lower(),key[1])
-            #graphyte.Sender('graphite01.pic.es', port=myport, protocol=myprotocol, prefix=gr_prefix + socket.gethostname().replace(".","_")).send(key[0].lower(), key[1])
-            #graphyte.Sender('graphite02.pic.es', port=myport, protocol=myprotocol, prefix=gr_prefix + socket.gethostname().replace(".","_")).send(key[0].lower(), key[1])
+            graphyte.Sender('graphite01.pic.es', port=myport, protocol=myprotocol, prefix=gr_prefix + socket.gethostname().replace(".","_")).send(key[0].lower(), key[1])
+            graphyte.Sender('graphite02.pic.es', port=myport, protocol=myprotocol, prefix=gr_prefix + socket.gethostname().replace(".","_")).send(key[0].lower(), key[1])
 
 
 # In[8]:
