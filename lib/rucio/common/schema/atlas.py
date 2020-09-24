@@ -53,7 +53,7 @@ ACTIVITY = {"description": "Activity name",
                      "Upload/Download (User)", "User Subscriptions",
                      "Globus Online Test"]}
 
-SCOPE_LENGTH = 25
+SCOPE_LENGTH = 500
 
 SCOPE = {"description": "Scope name",
          "type": "string",
@@ -63,11 +63,11 @@ R_SCOPE = {"description": "Scope name",
            "type": "string",
            "pattern": "\\w"}
 
-NAME_LENGTH = 250
+NAME_LENGTH = 500
 
 NAME = {"description": "Data Identifier name",
         "type": "string",
-        "pattern": "^[A-Za-z0-9][A-Za-z0-9\\.\\-\\_]{1,%s}$" % NAME_LENGTH}
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9\\.\\-\\_/]{1,%s}$" % NAME_LENGTH}
 
 R_NAME = {"description": "Data Identifier name",
           "type": "string",
@@ -350,6 +350,7 @@ ACCOUNT_ATTRIBUTE = {"description": "Account attribute",
                      "pattern": r'^[a-zA-Z0-9-_\\/\\.]{1,30}$'}
 
 SCOPE_NAME_REGEXP = '/(.*)/(.*)'
+# SCOPE_NAME_REGEXP = '/([^/]*)(?=/)(.*)'
 
 DISTANCE = {"description": "RSE distance",
             "type": "object",
