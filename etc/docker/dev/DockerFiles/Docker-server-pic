@@ -77,7 +77,6 @@ RUN yum install -y --skip-broken gfal2-all \
 
 
 RUN python3 -m pip install --upgrade pip setuptools
-#RUN yum install gfal2-devel gfal2-doc gfal2-plugin-mock gfal2-python-doc gfal2-python3 boost-python36 glib2-devel libattr-devel
 
 
 RUN rm -rf /usr/lib/python3.6/site-packages/ipaddress*
@@ -96,47 +95,8 @@ RUN python2 -m pip install fts3-rest
 RUN python2 -m pip install --upgrade urllib3
 RUN python2 -m pip install --upgrade requests
 
-RUN mkdir -p /opt/rucio/etc/user-cert/
 RUN mkdir -p /etc/collectd.d/
-RUN mkdir -p /opt/rucio/etc/host-cert/
 RUN mkdir -p /etc/vomses
-RUN mkdir -p /etc/collectd.d/
 RUN python -m pip install supervisor
-
-ADD Daemon-certs/start-daemon-v2.sh /
-RUN chmod 777 /start-daemon-v2.sh
-RUN chmod -R 777 /start-daemon-v2.sh
-RUN chmod +x /start-daemon-v2.sh
-
-# ADD files 
-#ADD /Server-files/certs/* /etc/grid-security/certificates/
-ADD /Server-files/vomses/* /etc/vomses/
-ADD /Server-files/run_daemons /usr/local/bin/
-ADD /Server-files/rucio.cfg /opt/rucio/etc/rucio.cfg
-ADD /Server-files/rucio.conf /etc/httpd/conf.d/rucio.conf
-ADD /Server-files/docker-entrypoint.sh /
-ADD /Server-files/monit-entrypoint.sh /
-#ADD /Server-files/user-host-certs/* /etc/grid-security/
-ADD /Server-files/00-mpm.conf /etc/httpd/conf.modules.d/
-ADD /Server-files/supervisord.conf /etc/supervisord.conf
-ADD /Server-files/supervisord.conf /etc/supervisor/conf.d/
-ADD /Server-files/rucio-daemons.ini /etc/supervisord.d/rucio-daemons.ini
-ADD /Server-files/conveyor-submitter.sh /
-ADD /Server-files/run_daemons_agus.sh /
-ADD /Server-files/bashrc /root/.bashrc
-ADD /Server-files/renew_proxy.sh /renew_proxy.sh	
-ADD /Server-files/Rucio-monitoring.py /Rucio-monitoring.py
-ADD /Server-files/write_graphite-config.conf /etc/collectd.d/write_graphite-config.conf
-ADD /Server-files/init_monitoring.sh /
-ADD /Server-files/lfn2pfn.py /
-
-RUN chmod 777 /conveyor-submitter.sh
-RUN chmod -R 777 /conveyor-submitter.sh
-RUN chmod 777 /run_daemons_agus.sh
-RUN chmod 777 /renew_proxy.sh
-RUN chmod 777 / 
-
-RUN ls /opt/rucio/tools/
-RUN chmod +x /usr/local/bin/run_daemons
 
 

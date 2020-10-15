@@ -33,7 +33,6 @@ RUN yum install -y --skip-broken gfal2* \
    && yum clean all
 
 RUN yum install -y --skip-broken gfal2-plugin*
-
 RUn yum install -y python3-gfal2 \
    boost-python36 \
    glib2-devel \
@@ -41,7 +40,6 @@ RUn yum install -y python3-gfal2 \
    libattr-devel \
    && yum clean all 
 
-# RUN yum install gfal2-devel gfal2-doc gfal2-plugin-mock gfal2-python-doc gfal2-python3 boost-python36 glib2-devel libattr-devel
 RUN rpm -i /tmp/oic.rpm; \
     echo "/usr/lib/oracle/12.2/client64/lib" >/etc/ld.so.conf.d/oracle.conf; \
     ldconfig
@@ -59,36 +57,11 @@ RUN python3 -m pip install graphyte
 # To generate the configuration and enable bash completion for the rucio clients
 
 ENV PATH $PATH:/opt/rucio/etc
-ADD bashrc /root/.bashrc
-ADD /Other-certs/rucio.cfg.pic1 /opt/rucio/etc/rucio.cfg
-
-# Add scripts 
-# Add scripts
-ADD /Other-certs/test-bruzzese.py /
-ADD /Other-certs/test-upload-bruzzese.py /
-ADD /Other-certs/test-upload-hash-bruzzese.py /
-ADD /Other-certs/test-create-files-bruzzese.py /
-ADD /Other-certs/test-create-rules-bruzzese.py /
-ADD /Other-certs/test-create-hash-rules-bruzzese.py /
-ADD /Other-certs/lfn2pfn.py /
-ADD /Other-certs/MAGIC_dataset.txt /
-ADD /Other-certs/cred_proxy.bruzzese /cred_proxy
-ADD /Other-certs/requirements.readthedocs.txt /
-RUN python3 -m pip install -r /requirements.readthedocs.txt
 
 RUN chmod +x /cred_proxy
-#RUN ./cred_proxy
 RUN mkdir -p /etc/grid-security/certificates
-#ADD /Server-files/certs/* /etc/grid-security/certificates/
-ADD /Server-files/vomses/* /etc/vomses/
-#ADD /Server-files/user-host-certs/* /etc/grid-security/
-
 RUN mkdir -p /etc/collectd.d/
-ADD /Server-files/write_graphite-config.conf /etc/collectd.d/write_graphite-config.conf
-ADD /Server-files/init_monitoring.sh /
-ADD /Other-certs/Rucio-monitoring.py /Rucio-monitoring.py
 
-RUN chmod +x /*.py
 
 RUN yum clean all && \
     rm -rf /var/cache/yum
