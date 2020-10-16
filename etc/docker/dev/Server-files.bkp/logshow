@@ -1,3 +1,0 @@
-#!/bin/bash
-multitail -f -j /var/log/rucio/httpd_access_log /var/log/httpd/error_log >> /var/log/daemon_logs/log_errors 
-
