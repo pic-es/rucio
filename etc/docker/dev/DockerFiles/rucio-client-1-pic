@@ -1,0 +1,69 @@
+FROM centos:7
+# RUN echo "Building client"
+
+# Required repos
+RUN yum install -y wget
+ADD "http://dmc-repo.web.cern.ch/dmc-repo/dmc-ci-el7.repo" "/etc/yum.repos.d/"
+ADD "http://repository.egi.eu/sw/production/cas/1/current/repo-files/EGI-trustanchors.repo" "/etc/yum.repos.d/"
+RUN yum -y install https://repo.opensciencegrid.org/osg/3.5/osg-3.5-el7-release-latest.rpm
+
+RUN yum --setopt=tsflags=nodocs -y install epel-release yum-plugin-ovl \
+   && yum --setopt=tsflags=nodocs -y install fetch-crl wn sysstat git vim gcc cmake make ca-policy-egi-core ca-policy-lcg \
+           voms-clients-cpp voms \
+   && yum clean all
+
+RUN yum install -y epel-release.noarch
+RUN yum upgrade -y
+RUN yum install -y root nano git tree make httpd python3 python3-mod_wsgi libaio gcc python36-devel.x86_64 mod_ssl openssl-devel.x86_64 python3-m2crypto libnsl.x86_64 cronie
+
+# Add voms dependencies 
+RUN yum install -y globus-proxy-utils voms-clients-cpp voms-clients-java
+
+# Add gfal dependencies 
+RUN yum install -y --skip-broken gfal2* \
+   gfal* --skip-broken \
+   tree \
+   which \
+   gfal2-plugin-* --skip-broken \
+   gfal2-python \
+   gfal2-util \
+   gfal2-all \
+   gfal2-plugin-http* \
+   python3 \
+   && yum clean all
+
+RUN yum install -y --skip-broken gfal2-plugin*
+RUn yum install -y python3-gfal2 \
+   boost-python36 \
+   glib2-devel \
+   gtest \
+   libattr-devel \
+   && yum clean all 
+
+RUN rpm -i /tmp/oic.rpm; \
+    echo "/usr/lib/oracle/12.2/client64/lib" >/etc/ld.so.conf.d/oracle.conf; \
+    ldconfig
+
+RUN python3 -m pip install --upgrade pip setuptools
+RUN rm -rf /usr/lib/python3.6/site-packages/ipaddress*
+RUN python3 -m pip install rucio-clients
+
+RUN python3 -m pip install j2cli psycopg2-binary
+RUN python3 -m pip install cx_oracle==6.3.1 PyMySQL
+RUN python3 -m pip install numpy
+RUN python3 -m pip install pytz
+RUN python3 -m pip install graphyte
+
+# To generate the configuration and enable bash completion for the rucio clients
+
+ENV PATH $PATH:/opt/rucio/etc
+
+RUN chmod +x /cred_proxy
+RUN mkdir -p /etc/grid-security/certificates
+RUN mkdir -p /etc/collectd.d/
+
+
+RUN yum clean all && \
+    rm -rf /var/cache/yum
+
+CMD ["/usr/sbin/init", "/bin/bash", "./entrypoint.sh"]
