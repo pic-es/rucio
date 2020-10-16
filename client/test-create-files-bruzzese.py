@@ -352,7 +352,7 @@ def random_line(filename, DestRSE, number=1, list_files=None):
 
 
 ######################################################
-filename = '/MAGIC_dataset.txt'
+filename = 'client/MAGIC_dataset.txt'
 
 for rses in rses_catch: 
            
