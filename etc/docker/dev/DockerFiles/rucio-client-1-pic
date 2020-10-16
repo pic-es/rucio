@@ -53,6 +53,7 @@ RUN python3 -m pip install cx_oracle==6.3.1 PyMySQL
 RUN python3 -m pip install numpy
 RUN python3 -m pip install pytz
 RUN python3 -m pip install graphyte
+RUN python3 -m pip install rucio
 
 # To generate the configuration and enable bash completion for the rucio clients
 

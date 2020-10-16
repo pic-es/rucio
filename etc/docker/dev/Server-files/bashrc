@@ -12,3 +12,4 @@ if [ -f /etc/bashrc ]; then
 fi
 
 alias python=python3
+alias python='/usr/bin/python3'
