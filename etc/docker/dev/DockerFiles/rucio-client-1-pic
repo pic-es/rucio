@@ -58,7 +58,7 @@ RUN python3 -m pip install graphyte
 
 ENV PATH $PATH:/opt/rucio/etc
 
-RUN chmod +x /cred_proxy
+#RUN chmod +x /cred_proxy
 RUN mkdir -p /etc/grid-security/certificates
 RUN mkdir -p /etc/collectd.d/
 
