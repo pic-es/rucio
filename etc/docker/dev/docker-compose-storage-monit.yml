@@ -36,7 +36,6 @@ services:
       - ../../../config/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
       - ../../../config/rucio-daemons.ini:/etc/supervisord.d/rucio-daemons.ini
       - /etc/grid-security/certificates:/etc/grid-security/certificates
-
     environment:
       - X509_USER_CERT=/etc/grid-security/usercert.pem
       - X509_USER_KEY=/etc/grid-security/userkey.pem
@@ -147,7 +146,7 @@ services:
       - ../../../config/write_graphite-config.conf:/etc/collectd.d/write_graphite-config.conf
       - ../../../config/bashrc:/.bashrc
       - ../../../client/rucio.cfg:/opt/rucio/etc/rucio.cfg
-      - ../../../client/:/
+      - ../../../client/:/client
     environment:
       - X509_USER_CERT=/etc/grid-security/usercert.pem
       - X509_USER_KEY=/etc/grid-security/usercert.key
