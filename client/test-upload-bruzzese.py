@@ -44,7 +44,7 @@ from subprocess import PIPE, Popen
 import requests
 from requests.exceptions import ReadTimeout
 
-from rucio.common.utils import generate_http_error_flask, render_json, APIEncoder
+# from rucio.common.utils import generate_http_error_flask, render_json, APIEncoder
 
 try:
     from StringIO import StringIO ## for Python 2
